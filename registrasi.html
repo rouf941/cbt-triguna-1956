@@ -1,0 +1,761 @@
+<!DOCTYPE html>
+<html lang="id" translate="no">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="google" content="notranslate">
+    <meta name="theme-color" content="#080d1a">
+    <title>Registrasi — CBT TRIGUNA 1956</title>
+    <link rel="icon" type="image/png" href="logo-triguna-192.png">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        /* =========================================================
+           REGISTRASI — FUTURISTIC / SIMPLE / MOBILE FIRST
+           Semua style di-scope ke .registration-page agar tidak
+           mengubah dashboard atau halaman ujian lainnya.
+        ========================================================= */
+        .registration-page {
+            --reg-bg: #f4f7fb;
+            --reg-surface: rgba(255,255,255,.86);
+            --reg-surface-strong: #ffffff;
+            --reg-text: #15213a;
+            --reg-muted: #6d7890;
+            --reg-line: rgba(92,111,145,.18);
+            --reg-blue: #4f8cff;
+            --reg-cyan: #37d7ff;
+            --reg-green: #1ec98b;
+            --reg-shadow: 0 28px 70px rgba(38,58,95,.14);
+            min-height: 100dvh !important;
+            padding: 28px !important;
+            position: relative;
+            overflow: hidden;
+            background:
+                radial-gradient(circle at 12% 12%, rgba(79,140,255,.15), transparent 26%),
+                radial-gradient(circle at 88% 18%, rgba(55,215,255,.11), transparent 22%),
+                radial-gradient(circle at 50% 110%, rgba(30,201,139,.08), transparent 28%),
+                var(--reg-bg) !important;
+            color: var(--reg-text);
+        }
+
+        .registration-page::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            opacity: .35;
+            background-image:
+                linear-gradient(rgba(79,140,255,.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(79,140,255,.05) 1px, transparent 1px);
+            background-size: 34px 34px;
+            mask-image: linear-gradient(to bottom, rgba(0,0,0,.75), transparent 92%);
+        }
+
+        .registration-page .reg-glow {
+            position: absolute;
+            width: 280px;
+            height: 280px;
+            border-radius: 50%;
+            filter: blur(50px);
+            pointer-events: none;
+            opacity: .26;
+        }
+        .registration-page .reg-glow-a { top: -120px; left: -90px; background: #4f8cff; }
+        .registration-page .reg-glow-b { right: -120px; bottom: -90px; background: #37d7ff; }
+
+        .registration-shell {
+            width: min(100%, 1080px);
+            min-height: min(820px, calc(100dvh - 56px));
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: minmax(280px, .78fr) minmax(480px, 1.22fr);
+            background: var(--reg-surface);
+            border: 1px solid var(--reg-line);
+            border-radius: 28px;
+            box-shadow: var(--reg-shadow);
+            backdrop-filter: blur(22px);
+            -webkit-backdrop-filter: blur(22px);
+            overflow: hidden;
+            position: relative;
+            z-index: 1;
+        }
+
+        .registration-showcase {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 44px 38px;
+            overflow: hidden;
+            background:
+                linear-gradient(160deg, rgba(10,20,41,.96), rgba(15,29,56,.92));
+            color: #fff;
+        }
+
+        .registration-showcase::after {
+            content: '';
+            position: absolute;
+            width: 330px;
+            height: 330px;
+            right: -160px;
+            top: -120px;
+            border: 1px solid rgba(120,191,255,.15);
+            border-radius: 50%;
+            box-shadow:
+                0 0 0 28px rgba(120,191,255,.04),
+                0 0 0 56px rgba(120,191,255,.025),
+                0 0 80px rgba(55,215,255,.12);
+            pointer-events: none;
+        }
+
+        .reg-kicker {
+            display: inline-flex;
+            align-items: center;
+            gap: 9px;
+            width: fit-content;
+            padding: 7px 10px;
+            border: 1px solid rgba(128,188,255,.2);
+            border-radius: 999px;
+            background: rgba(255,255,255,.06);
+            color: #9cc6ff;
+            font-size: .68rem;
+            font-weight: 800;
+            letter-spacing: .15em;
+            text-transform: uppercase;
+        }
+        .reg-kicker .pulse-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: #57d9ff;
+            box-shadow: 0 0 0 5px rgba(87,217,255,.08), 0 0 16px rgba(87,217,255,.75);
+        }
+
+        .reg-brand-block { margin-top: 42px; position: relative; z-index: 1; }
+        .reg-logo-frame {
+            width: 100%;
+            max-width: 330px;
+            min-height: 122px;
+            padding: 16px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid rgba(255,255,255,.12);
+            border-radius: 18px;
+            background: linear-gradient(145deg, rgba(255,255,255,.08), rgba(255,255,255,.035));
+            box-shadow: inset 0 1px 0 rgba(255,255,255,.08);
+        }
+        .reg-logo-frame img {
+            width: min(100%, 285px);
+            max-height: 92px;
+            object-fit: contain;
+            filter: drop-shadow(0 6px 22px rgba(0,0,0,.24));
+        }
+
+        .registration-showcase h1 {
+            margin: 28px 0 12px;
+            max-width: 360px;
+            font-size: clamp(2rem, 4vw, 3.1rem);
+            line-height: 1.02;
+            letter-spacing: -.045em;
+            font-weight: 800;
+        }
+        .registration-showcase h1 span {
+            background: linear-gradient(90deg, #fff, #a9ddff 55%, #6bf4d0);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+        .reg-lead {
+            margin: 0;
+            max-width: 390px;
+            color: #b7c7df;
+            font-size: .95rem;
+            line-height: 1.75;
+        }
+
+        .reg-feature-list {
+            display: grid;
+            gap: 11px;
+            margin-top: 30px;
+        }
+        .reg-feature {
+            display: flex;
+            align-items: center;
+            gap: 11px;
+            padding: 10px 12px;
+            border: 1px solid rgba(255,255,255,.08);
+            border-radius: 13px;
+            background: rgba(255,255,255,.035);
+            color: #dce8f8;
+            font-size: .78rem;
+            font-weight: 600;
+        }
+        .reg-feature i {
+            width: 28px;
+            height: 28px;
+            display: grid;
+            place-items: center;
+            border-radius: 9px;
+            color: #6fe6ff;
+            background: rgba(55,215,255,.08);
+            border: 1px solid rgba(55,215,255,.12);
+        }
+
+        .reg-showcase-foot {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #7f91ad;
+            font-size: .72rem;
+            position: relative;
+            z-index: 1;
+        }
+        .reg-showcase-foot i { color: #49daaa; }
+
+        .registration-form-panel {
+            display: flex;
+            flex-direction: column;
+            padding: 30px 38px 28px;
+            background: rgba(255,255,255,.56);
+            min-width: 0;
+        }
+
+        .registration-page .registration-form-panel .login-card {
+            width: 100% !important;
+            max-width: none !important;
+            padding: 0 !important;
+            background: transparent !important;
+            border: 0 !important;
+            box-shadow: none !important;
+            backdrop-filter: none !important;
+            -webkit-backdrop-filter: none !important;
+            overflow: visible !important;
+        }
+        .registration-page .registration-form-panel .login-card::before { display: none; }
+
+        .reg-panel-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 16px;
+            margin-bottom: 22px;
+        }
+        .reg-panel-header-copy { min-width: 0; }
+        .reg-panel-title {
+            margin: 0 0 6px;
+            font-size: clamp(1.45rem, 2.5vw, 1.95rem);
+            font-weight: 800;
+            line-height: 1.12;
+            letter-spacing: -.035em;
+            color: var(--reg-text);
+        }
+        .reg-panel-subtitle {
+            margin: 0;
+            color: var(--reg-muted);
+            font-size: .84rem;
+            line-height: 1.65;
+        }
+        .reg-panel-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            padding: 7px 10px;
+            border-radius: 999px;
+            background: rgba(79,140,255,.08);
+            border: 1px solid rgba(79,140,255,.13);
+            color: #4578de;
+            font-size: .66rem;
+            font-weight: 800;
+            letter-spacing: .1em;
+            white-space: nowrap;
+            text-transform: uppercase;
+        }
+
+        .registration-page .auth-status {
+            margin: 0 0 17px 0;
+            min-height: 44px;
+            padding: 10px 12px;
+            border-radius: 13px;
+            background: rgba(79,140,255,.055);
+            border: 1px solid rgba(79,140,255,.12);
+            color: #54709e;
+            font-size: .75rem;
+            font-weight: 650;
+            box-shadow: none;
+        }
+        .registration-page .auth-status::before { flex: 0 0 auto; }
+        .registration-page .auth-status.error {
+            background: rgba(239,68,68,.055);
+            border-color: rgba(239,68,68,.16);
+            color: #b23a4a;
+        }
+        .registration-page .auth-status.success {
+            background: rgba(30,201,139,.06);
+            border-color: rgba(30,201,139,.16);
+            color: #177d61;
+        }
+        .registration-page .auth-status.info {
+            background: rgba(79,140,255,.055);
+            border-color: rgba(79,140,255,.13);
+            color: #496fae;
+        }
+
+        .reg-section-label {
+            display: flex;
+            align-items: center;
+            gap: 9px;
+            margin: 0 0 10px;
+            color: #72809a;
+            font-size: .67rem;
+            font-weight: 800;
+            letter-spacing: .12em;
+            text-transform: uppercase;
+        }
+        .reg-section-label::before {
+            content: '';
+            width: 18px;
+            height: 1px;
+            background: linear-gradient(90deg, var(--reg-blue), transparent);
+        }
+
+        .registration-page .role-selection-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin: 0 0 18px;
+        }
+        .registration-page .role-box {
+            min-height: 72px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 13px 15px;
+            border: 1px solid var(--reg-line);
+            border-radius: 15px;
+            background: rgba(255,255,255,.48);
+            box-shadow: none;
+            text-align: left;
+        }
+        .registration-page .role-box i {
+            width: 36px;
+            height: 36px;
+            margin: 0;
+            display: grid;
+            place-items: center;
+            border-radius: 11px;
+            background: rgba(109,120,144,.075);
+            color: #8490a6;
+            font-size: 1rem;
+        }
+        .registration-page .role-box span { color: #65738b; font-size: .77rem; font-weight: 800; letter-spacing: .06em; }
+        .registration-page .role-box small { display: block; color: #93a0b4; font-size: .66rem; font-weight: 600; margin-top: 1px; }
+        .registration-page .role-box:hover { transform: translateY(-1px); border-color: rgba(79,140,255,.32); background: rgba(79,140,255,.04); }
+        .registration-page .role-box.active {
+            border-color: rgba(79,140,255,.5);
+            background: linear-gradient(145deg, rgba(79,140,255,.09), rgba(55,215,255,.04));
+            box-shadow: inset 0 0 0 1px rgba(79,140,255,.06), 0 10px 24px rgba(79,140,255,.08);
+        }
+        .registration-page .role-box.active i { color: var(--reg-blue); background: rgba(79,140,255,.11); }
+        .registration-page .role-box.active span { color: #366ccf; }
+
+        .registration-page .registration-form { width: 100%; }
+        .registration-page .input-group { margin-bottom: 13px; }
+        .registration-page .input-group label {
+            display: block;
+            margin: 0 0 7px 2px;
+            color: #516078;
+            font-size: .73rem;
+            font-weight: 800;
+            letter-spacing: .01em;
+        }
+        .reg-input-shell { position: relative; }
+        .reg-input-icon {
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #91a0b7;
+            font-size: .82rem;
+            pointer-events: none;
+            transition: color .2s ease;
+        }
+        .reg-input-shell:focus-within .reg-input-icon { color: var(--reg-blue); }
+        .registration-page .input-text {
+            min-height: 46px;
+            width: 100%;
+            padding: 11px 14px 11px 39px;
+            border: 1px solid var(--reg-line);
+            border-radius: 13px;
+            background: rgba(255,255,255,.68);
+            color: var(--reg-text);
+            font-size: .84rem;
+            font-weight: 600;
+            box-shadow: inset 0 1px 0 rgba(255,255,255,.35);
+        }
+        .registration-page .input-text::placeholder { color: #a4afc0; font-weight: 500; }
+        .registration-page .input-text:focus {
+            outline: none;
+            border-color: rgba(79,140,255,.52);
+            background: rgba(255,255,255,.92);
+            box-shadow: 0 0 0 4px rgba(79,140,255,.08), 0 9px 24px rgba(79,140,255,.06);
+        }
+        .registration-page select.input-text {
+            appearance: none;
+            background-image: linear-gradient(45deg, transparent 50%, #97a4b8 50%), linear-gradient(135deg, #97a4b8 50%, transparent 50%);
+            background-position: calc(100% - 17px) 20px, calc(100% - 12px) 20px;
+            background-size: 5px 5px, 5px 5px;
+            background-repeat: no-repeat;
+            padding-right: 35px;
+        }
+
+        .reg-password-toggle {
+            position: absolute;
+            right: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 34px;
+            height: 34px;
+            display: grid;
+            place-items: center;
+            border: 0;
+            border-radius: 9px;
+            background: transparent;
+            color: #8e9aae;
+            cursor: pointer;
+            transition: all .2s ease;
+        }
+        .reg-password-toggle:hover { background: rgba(79,140,255,.07); color: var(--reg-blue); }
+        .registration-page #reg-password,
+        .registration-page #reg-confirm-password { padding-right: 46px; }
+
+        .reg-two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .registration-page .checkbox-container {
+            max-height: 136px;
+            padding: 9px;
+            border-radius: 13px;
+            background: rgba(255,255,255,.56);
+            border: 1px solid var(--reg-line);
+        }
+        .registration-page .checkbox-container label {
+            padding: 7px 8px;
+            margin-bottom: 4px;
+            border-radius: 9px;
+            color: #58677f;
+            font-size: .76rem;
+            font-weight: 600;
+        }
+        .registration-page .checkbox-container label:hover { background: rgba(79,140,255,.05); }
+        .registration-page .checkbox-container input { accent-color: var(--reg-blue); }
+
+        .registration-page #admin-registration-options,
+        .registration-page #mass-upload-box,
+        .registration-page #reg-warning {
+            border-radius: 13px !important;
+            box-shadow: none !important;
+        }
+
+        .reg-submit {
+            width: 100% !important;
+            min-height: 49px;
+            margin: 10px 0 0 !important;
+            border: 1px solid rgba(79,140,255,.15) !important;
+            border-radius: 14px !important;
+            color: #fff !important;
+            background: linear-gradient(135deg, #4b7fff, #2c9df5 58%, #37c6d9) !important;
+            box-shadow: 0 12px 28px rgba(49,127,242,.22) !important;
+            font-size: .76rem !important;
+            font-weight: 800 !important;
+            letter-spacing: .08em;
+        }
+        .reg-submit:hover:not(:disabled) {
+            transform: translateY(-1px);
+            filter: brightness(1.03);
+            box-shadow: 0 16px 30px rgba(49,127,242,.25) !important;
+        }
+        .reg-submit:disabled { cursor: not-allowed; filter: grayscale(.18); }
+
+        .reg-login-link {
+            margin-top: 13px;
+            text-align: center;
+            color: #8190a6;
+            font-size: .74rem;
+        }
+        .reg-login-link a { color: #4778db; font-weight: 800; }
+        .reg-login-link a:hover { color: #245dc8; }
+        .registration-page .login-footer {
+            margin-top: auto;
+            padding-top: 16px;
+            color: #93a0b4;
+            font-size: .66rem;
+            line-height: 1.5;
+            text-align: center;
+        }
+
+        .reg-required-note {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            margin: 4px 0 14px 1px;
+            color: #99a6b9;
+            font-size: .66rem;
+        }
+        .reg-required-note i { color: #4f8cff; font-size: .68rem; }
+
+        /* Dark mode */
+        body.dark-mode.registration-page {
+            --reg-bg: #070b15;
+            --reg-surface: rgba(13,18,31,.78);
+            --reg-surface-strong: #0d1321;
+            --reg-text: #edf4ff;
+            --reg-muted: #8c9ab3;
+            --reg-line: rgba(148,163,184,.15);
+            --reg-shadow: 0 28px 80px rgba(0,0,0,.45);
+            background:
+                radial-gradient(circle at 8% 8%, rgba(79,140,255,.13), transparent 24%),
+                radial-gradient(circle at 90% 12%, rgba(55,215,255,.09), transparent 20%),
+                radial-gradient(circle at 50% 110%, rgba(30,201,139,.06), transparent 28%),
+                #070b15 !important;
+        }
+        body.dark-mode.registration-page .registration-shell { background: rgba(13,18,31,.74); border-color: rgba(148,163,184,.12); }
+        body.dark-mode.registration-page .registration-form-panel { background: rgba(10,15,26,.42); }
+        body.dark-mode.registration-page .reg-panel-title { color: #edf4ff; }
+        body.dark-mode.registration-page .reg-panel-subtitle { color: #8592aa; }
+        body.dark-mode.registration-page .reg-section-label { color: #7f8da5; }
+        body.dark-mode.registration-page .role-box { background: rgba(9,14,25,.55); border-color: rgba(148,163,184,.15); }
+        body.dark-mode.registration-page .role-box span { color: #8e9bb1; }
+        body.dark-mode.registration-page .role-box small { color: #68768e; }
+        body.dark-mode.registration-page .role-box i { background: rgba(148,163,184,.06); color: #7d8ba1; }
+        body.dark-mode.registration-page .role-box.active { background: linear-gradient(145deg, rgba(79,140,255,.12), rgba(55,215,255,.045)); border-color: rgba(79,140,255,.48); }
+        body.dark-mode.registration-page .role-box.active span { color: #9fc1ff; }
+        body.dark-mode.registration-page .input-group label { color: #aebbd0; }
+        body.dark-mode.registration-page .input-text { background: rgba(7,11,21,.76); border-color: rgba(148,163,184,.14); color: #edf4ff; box-shadow: none; }
+        body.dark-mode.registration-page .input-text::placeholder { color: #65738a; }
+        body.dark-mode.registration-page .input-text:focus { background: rgba(8,13,24,.94); border-color: rgba(79,140,255,.56); }
+        body.dark-mode.registration-page select.input-text { background-color: rgba(7,11,21,.76); }
+        body.dark-mode.registration-page .checkbox-container { background: rgba(7,11,21,.55); border-color: rgba(148,163,184,.14); }
+        body.dark-mode.registration-page .checkbox-container label { color: #aeb9cb; }
+        body.dark-mode.registration-page .reg-login-link { color: #748199; }
+        body.dark-mode.registration-page .login-footer { color: #68758b; }
+        body.dark-mode.registration-page .reg-required-note { color: #6f7d94; }
+
+        @media (max-width: 900px) {
+            .registration-page { padding: 14px !important; }
+            .registration-shell {
+                min-height: auto;
+                grid-template-columns: 1fr;
+                width: min(100%, 560px);
+                border-radius: 22px;
+            }
+            .registration-showcase {
+                min-height: 230px;
+                padding: 26px 24px 24px;
+            }
+            .reg-brand-block { margin-top: 24px; }
+            .reg-logo-frame { min-height: 82px; max-width: 270px; padding: 10px 14px; }
+            .reg-logo-frame img { max-height: 62px; width: 235px; }
+            .registration-showcase h1 { margin: 18px 0 8px; font-size: 2rem; }
+            .reg-lead { max-width: 510px; font-size: .82rem; line-height: 1.6; }
+            .reg-feature-list { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 18px; }
+            .reg-feature { flex: 1 1 160px; }
+            .registration-showcase .reg-showcase-foot { margin-top: 18px; }
+            .registration-form-panel { padding: 24px 22px 22px; }
+        }
+
+        @media (max-width: 560px) {
+            .registration-page { padding: 8px !important; }
+            .registration-shell { border-radius: 18px; width: 100%; }
+            .registration-showcase { min-height: 0; padding: 20px 17px 18px; }
+            .registration-showcase::after { width: 220px; height: 220px; right: -135px; top: -110px; }
+            .reg-kicker { font-size: .58rem; letter-spacing: .1em; }
+            .reg-logo-frame { margin-top: 17px; min-height: 70px; max-width: 235px; }
+            .reg-logo-frame img { width: 210px; max-height: 52px; }
+            .registration-showcase h1 { font-size: 1.65rem; }
+            .reg-lead { display: none; }
+            .reg-feature-list { display: none; }
+            .registration-showcase .reg-showcase-foot { margin-top: 14px; font-size: .62rem; }
+            .registration-form-panel { padding: 20px 14px 16px; }
+            .reg-panel-header { margin-bottom: 16px; }
+            .reg-panel-tag { display: none; }
+            .reg-panel-title { font-size: 1.4rem; }
+            .reg-panel-subtitle { font-size: .74rem; }
+            .registration-page .auth-status { font-size: .69rem; margin-bottom: 14px; }
+            .registration-page .role-selection-container { gap: 8px; margin-bottom: 15px; }
+            .registration-page .role-box { min-height: 63px; padding: 10px 11px; }
+            .registration-page .role-box i { width: 31px; height: 31px; font-size: .88rem; }
+            .registration-page .role-box span { font-size: .69rem; }
+            .registration-page .role-box small { font-size: .59rem; }
+            .registration-page .input-text { min-height: 46px; font-size: .8rem; }
+            .reg-two-col { grid-template-columns: 1fr; gap: 0; }
+            .registration-page .login-footer { padding-top: 12px; }
+        }
+    </style>
+</head>
+<body class="login-page-bg registration-page">
+    <div class="reg-glow reg-glow-a"></div>
+    <div class="reg-glow reg-glow-b"></div>
+
+    <div class="registration-shell">
+        <section class="registration-showcase">
+            <div>
+                <div class="reg-kicker"><span class="pulse-dot"></span> CBT TRIGUNA 1956 · ACCESS</div>
+
+                <div class="reg-brand-block">
+                    <div class="reg-logo-frame">
+                        <img src="logo-triguna.png" alt="Logo TRIGUNA 1956" onerror="this.src='logo-triguna-512.png'">
+                    </div>
+                    <h1>Mulai dengan<br><span>akun yang tepat.</span></h1>
+                    <p class="reg-lead">Registrasi dibuat lebih ringkas, jelas, dan nyaman dipakai dari laptop maupun smartphone.</p>
+
+                    <div class="reg-feature-list">
+                        <div class="reg-feature"><i class="fas fa-shield-halved"></i><span>Alur pendaftaran terstruktur</span></div>
+                        <div class="reg-feature"><i class="fas fa-mobile-screen-button"></i><span>Responsif untuk perangkat mobile</span></div>
+                        <div class="reg-feature"><i class="fas fa-bolt"></i><span>Antarmuka cepat dan sederhana</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="reg-showcase-foot"><i class="fas fa-circle-check"></i><span>CBT TRIGUNA 1956 · Registration Portal</span></div>
+        </section>
+
+        <section class="registration-form-panel">
+            <div class="login-card">
+                <div class="reg-panel-header">
+                    <div class="reg-panel-header-copy">
+                        <h2 id="reg-title" class="reg-panel-title">REGISTRASI SISWA</h2>
+                        <p class="reg-panel-subtitle">Pilih jenis akun, lengkapi identitas, lalu buat password.</p>
+                    </div>
+                    <span class="reg-panel-tag"><i class="fas fa-user-plus"></i> Pendaftaran</span>
+                </div>
+
+                <div id="realtime-clock" class="realtime-clock" aria-live="polite" style="display:none">Menghubungkan waktu server...</div>
+                <div id="reg-status" class="auth-status info" role="status" aria-live="polite">Menyiapkan formulir registrasi...</div>
+
+                <div class="reg-section-label">01 · Jenis akun</div>
+                <div class="role-selection-container" aria-label="Pilih jenis akun">
+                    <div class="role-box active" id="select-siswa" role="button" tabindex="0" aria-pressed="true">
+                        <i class="fas fa-user-graduate"></i>
+                        <div><span>SISWA</span><small>Akun peserta ujian</small></div>
+                    </div>
+                    <div class="role-box" id="select-guru" role="button" tabindex="0" aria-pressed="false">
+                        <i class="fas fa-chalkboard-user"></i>
+                        <div><span>GURU</span><small>Akun pengajar</small></div>
+                    </div>
+                </div>
+
+                <div id="admin-registration-options" style="display:none;">
+                    <div class="reg-section-label">Mode admin</div>
+                    <div id="reg-role-admin-container" class="checkbox-container"></div>
+                    <div class="reg-required-note"><i class="fas fa-circle-info"></i> Multi-role hanya dapat digunakan oleh akun Admin yang sedang login.</div>
+                </div>
+
+                <div id="mass-upload-box" style="display:none;">
+                    <p style="margin:0 0 10px; font-size:.74rem; color:var(--success); font-weight:800;"><i class="fas fa-file-excel"></i> Registrasi Massal · <span id="lbl-role-massal">Siswa</span></p>
+                    <div style="display:flex;gap:8px;justify-content:flex-start;flex-wrap:wrap;">
+                        <button type="button" id="btn-download-template" class="btn-3d btn-secondary" style="margin:0;padding:7px 11px;font-size:.72rem;"><i class="fas fa-download"></i> Template</button>
+                        <label for="upload-massal" class="btn-3d" style="margin:0;padding:7px 11px;font-size:.72rem;cursor:pointer;"><i class="fas fa-upload"></i> Upload</label>
+                        <input type="file" id="upload-massal" accept=".xlsx,.xls" style="display:none;">
+                    </div>
+                    <p id="mass-upload-status" style="display:none;margin:9px 0 0;font-size:.68rem;color:var(--warning);"><i class="fas fa-spinner fa-spin"></i> Sedang memproses...</p>
+                </div>
+
+                <div id="reg-warning" style="display:none;"></div>
+
+                <form id="register-form" class="registration-form">
+                    <input type="hidden" id="reg-role" value="siswa">
+
+                    <div class="reg-section-label">02 · Identitas</div>
+                    <div class="input-group">
+                        <label for="reg-name">Nama Lengkap</label>
+                        <div class="reg-input-shell">
+                            <i class="reg-input-icon fas fa-user"></i>
+                            <input type="text" id="reg-name" class="input-text" placeholder="Masukkan nama lengkap" autocomplete="name" required>
+                        </div>
+                    </div>
+
+                    <div class="input-group">
+                        <label id="username-label" for="reg-username">Nomor Peserta / NIS</label>
+                        <div class="reg-input-shell">
+                            <i class="reg-input-icon fas fa-id-card"></i>
+                            <input type="text" id="reg-username" class="input-text" placeholder="Masukkan NIS (10 Digit Angka)" inputmode="numeric" maxlength="10" autocomplete="username" required>
+                        </div>
+                    </div>
+
+                    <div class="reg-two-col">
+                        <div class="input-group" id="group-kelas-siswa">
+                            <label for="reg-kelas-siswa">Pilih Kelas</label>
+                            <div class="reg-input-shell">
+                                <i class="reg-input-icon fas fa-layer-group"></i>
+                                <select id="reg-kelas-siswa" class="input-text" required>
+                                    <option value="" disabled selected>Memuat data kelas...</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="input-group" id="group-kelas-admin" style="display:none;">
+                            <label>Kelas (Mode Admin)</label>
+                            <div id="reg-kelas-admin-container" class="checkbox-container">Memuat data...</div>
+                        </div>
+
+                        <div class="input-group" id="group-mapel-guru" style="display:none;">
+                            <label>Mata Pelajaran (Guru)</label>
+                            <div id="reg-mapel-container" class="checkbox-container">Memuat data...</div>
+                        </div>
+
+                        <div class="input-group" id="group-kelas-guru" style="display:none;">
+                            <label>Kelas Ajar (Guru)</label>
+                            <div id="reg-kelas-guru-container" class="checkbox-container">Memuat data...</div>
+                        </div>
+                    </div>
+
+                    <div class="reg-section-label" style="margin-top:5px;">03 · Keamanan akun</div>
+                    <div class="reg-two-col">
+                        <div class="input-group">
+                            <label for="reg-password">Password</label>
+                            <div class="reg-input-shell">
+                                <i class="reg-input-icon fas fa-lock"></i>
+                                <input type="password" id="reg-password" class="input-text" placeholder="Minimal 6 karakter" autocomplete="new-password" minlength="6" required>
+                                <button type="button" class="reg-password-toggle" data-toggle-password="reg-password" aria-label="Tampilkan password"><i class="fas fa-eye"></i></button>
+                            </div>
+                        </div>
+                        <div class="input-group">
+                            <label for="reg-confirm-password">Konfirmasi Password</label>
+                            <div class="reg-input-shell">
+                                <i class="reg-input-icon fas fa-lock-keyhole"></i>
+                                <input type="password" id="reg-confirm-password" class="input-text" placeholder="Ketik ulang password" autocomplete="new-password" minlength="6" required>
+                                <button type="button" class="reg-password-toggle" data-toggle-password="reg-confirm-password" aria-label="Tampilkan konfirmasi password"><i class="fas fa-eye"></i></button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="reg-required-note"><i class="fas fa-circle-info"></i><span>Pastikan data yang diisi sesuai dengan data sekolah.</span></div>
+                    <button type="submit" class="btn-3d reg-submit" id="btn-submit" data-default-text="BUAT AKUN">BUAT AKUN</button>
+                    <div class="reg-login-link">Sudah punya akun? <a href="index.html">Masuk di sini</a></div>
+                </form>
+
+                <div class="login-footer">&copy; 2026 IT Support TRIGUNA 1956 · Registration Portal</div>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        (function () {
+            function initClock() {
+                const el = document.getElementById('realtime-clock');
+                if (!el) return;
+                const update = () => {
+                    const now = new Date();
+                    const date = now.toLocaleDateString('id-ID', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
+                    const time = now.toLocaleTimeString('id-ID', { hour:'2-digit', minute:'2-digit', second:'2-digit' }).replace(/\./g, ':');
+                    el.textContent = `${date} · ${time} WIB`;
+                };
+                update();
+                setInterval(update, 1000);
+            }
+            initClock();
+        })();
+    </script>
+    <script type="module" src="registrasi.js"></script>
+</body>
+</html>

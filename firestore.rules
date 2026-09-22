@@ -1,0 +1,84 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isSelf(uid) {
+      return signedIn() && request.auth.uid == uid;
+    }
+
+    function userDoc(uid) {
+      return get(/databases/$(database)/documents/users/$(uid));
+    }
+
+    // Role di data lama bisa tersimpan sebagai array ["admin"] atau string "admin".
+    // Rules dibuat toleran terhadap bentuk tersebut dan terhadap kapitalisasi umum.
+    function hasRole(role) {
+      let data = userDoc(request.auth.uid).data;
+      let roles = data.role;
+      return signedIn() &&
+        (
+          (roles is list && (
+            role in roles ||
+            (role == 'admin' && ('Admin' in roles || 'ADMIN' in roles)) ||
+            (role == 'guru' && ('Guru' in roles || 'GURU' in roles)) ||
+            (role == 'siswa' && ('Siswa' in roles || 'SISWA' in roles))
+          )) ||
+          (roles is string && (
+            roles == role ||
+            (role == 'admin' && (roles == 'Admin' || roles == 'ADMIN')) ||
+            (role == 'guru' && (roles == 'Guru' || roles == 'GURU')) ||
+            (role == 'siswa' && (roles == 'Siswa' || roles == 'SISWA'))
+          ))
+        );
+    }
+
+    function isAdmin() { return hasRole('admin'); }
+    function isStaff() { return isAdmin() || hasRole('guru'); }
+    function isStudent() { return hasRole('siswa'); }
+
+    // Konfigurasi yang dibaca sebelum login. Hanya dokumen non-rahasia yang boleh dibaca publik.
+    match /pengaturan/{docId} {
+      allow read: if docId in ['status_registrasi', 'data_akademik'];
+      allow write: if isAdmin();
+    }
+
+    // Profil pengguna. Akun siswa/guru dapat membuat profil sendiri; admin dapat membuat
+    // pengguna lain dan memberikan multi-role/admin.
+    match /users/{uid} {
+      allow read: if isSelf(uid) || isAdmin();
+      allow create: if (
+        isSelf(uid) &&
+        (request.resource.data.role == ['siswa'] || request.resource.data.role == ['guru']) &&
+        request.resource.data.username is string &&
+        request.resource.data.nama is string
+      ) || (
+        isAdmin() &&
+        request.resource.data.role is list &&
+        request.resource.data.username is string &&
+        request.resource.data.nama is string
+      );
+      allow update: if isAdmin() || (
+        isSelf(uid) &&
+        resource.data.role == request.resource.data.role &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['nama', 'username', 'updatedAt'])
+      );
+      allow delete: if isAdmin();
+    }
+
+    // Bank soal. Siswa/guru/admin dapat membaca sesuai autentikasi; hanya staff yang menulis.
+    match /bank_soal/{soalId} {
+      allow read: if signedIn() && (isStaff() || isStudent());
+      allow create, update, delete: if isStaff();
+    }
+
+    // Hasil ujian. Siswa hanya dapat membuat hasil untuk UID sendiri; staff dapat membaca semua.
+    match /hasil_ujian/{hasilId} {
+      allow create: if signedIn() && request.resource.data.uid == request.auth.uid;
+      allow read: if signedIn() && (isStaff() || resource.data.uid == request.auth.uid);
+      allow update, delete: if isAdmin();
+    }
+  }
+}

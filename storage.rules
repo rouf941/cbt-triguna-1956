@@ -1,0 +1,36 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function userDoc() {
+      return firestore.get(/databases/(default)/documents/users/$(request.auth.uid));
+    }
+
+    function hasRole(role) {
+      return signedIn() && role in userDoc().data.role;
+    }
+
+    function isStaff() {
+      return hasRole('admin') || hasRole('guru');
+    }
+
+    // Media soal hanya boleh dibaca oleh pengguna login. Upload/update/delete
+    // dibatasi untuk guru/admin, dengan validasi ukuran dan tipe file.
+    match /bank_soal/{allPaths=**} {
+      allow read: if signedIn();
+      allow create, update: if isStaff()
+        && request.resource.size < 20 * 1024 * 1024
+        && (request.resource.contentType.matches('image/.*')
+            || request.resource.contentType.matches('audio/.*')
+            || request.resource.contentType.matches('video/.*'));
+      allow delete: if isStaff();
+    }
+
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+<html lang="id" translate="no">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="google" content="notranslate">
+    <title>CBT TRIGUNA 1956 Dashboard</title>
+    <link rel="icon" type="image/png" href="logo-triguna-192.png">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .switch { position: relative; display: inline-block; width: 44px; height: 22px; margin: 0; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #cbd5e1; transition: .3s; border-radius: 34px; }
+        .slider:before { position: absolute; content: ""; height: 16px; width: 16px; left: 3px; bottom: 3px; background-color: white; transition: .3s; border-radius: 50%; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+        input:checked + .slider { background-color: var(--success); }
+        input:checked + .slider:before { transform: translateX(22px); }
+
+        body { -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none; -webkit-touch-callout: none; }
+        input, textarea, select { -webkit-user-select: auto !important; -ms-user-select: auto !important; user-select: auto !important; }
+        @media print { body { display: none !important; } }
+        
+        .ghost-input { border: 1px solid transparent; background: transparent; padding: 8px 10px; width: 100%; border-radius: 6px; transition: all 0.2s; font-family: inherit; color: var(--text-main); font-size: 0.9rem; }
+        .ghost-input:hover { border-color: #cbd5e1; background: #f8fafc; }
+        .ghost-input:focus { border-color: var(--primary); background: #ffffff; outline: none; box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1); }
+        .btn-icon { background: transparent; color: var(--info); border: none; font-size: 1.1rem; padding: 6px 8px; cursor: pointer; transition: 0.2s; border-radius: 6px; }
+        .btn-icon:hover { background: #eff6ff; transform: scale(1.1); }
+        .text-danger { color: var(--danger) !important; }
+        .text-danger:hover { background: #fef2f2 !important; color: #dc2626 !important; }
+        .text-warning { color: var(--warning) !important; }
+        .text-warning:hover { background: #fffbeb !important; color: #d97706 !important; }
+    </style>
+</head>
+<body>
+    <script>
+        (function() {
+            const currentHour = new Date().getHours();
+            const isNightTime = currentHour >= 18 || currentHour < 6;
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme === 'dark' || (!savedTheme && isNightTime)) {
+                document.body.classList.add('dark-mode');
+                if (!savedTheme) localStorage.setItem('theme', 'dark'); 
+            } else if (savedTheme === 'light' || (!savedTheme && !isNightTime)) {
+                document.body.classList.remove('dark-mode');
+                if (!savedTheme) localStorage.setItem('theme', 'light');
+            }
+            
+            function inisialisasiJamSistem() {
+                const clockEl = document.getElementById('realtime-clock');
+                if (!clockEl) return;
+                function perbaruiWaktu() {
+                    const sekarang = new Date();
+                    const opsiTanggal = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+                    const strTanggal = sekarang.toLocaleDateString('id-ID', opsiTanggal);
+                    const strJam = sekarang.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' }).replace(/\./g, ':');
+                    clockEl.innerHTML = `<i class="far fa-calendar-alt"></i> ${strTanggal} &nbsp;|&nbsp; <i class="far fa-clock"></i> ${strJam} WIB`;
+                }
+                perbaruiWaktu();
+                setInterval(perbaruiWaktu, 1000);
+            }
+            document.addEventListener('DOMContentLoaded', inisialisasiJamSistem);
+        })();
+    </script>
+
+    <div class="app-layout">
+        <header class="app-header" style="position: sticky; top: 0; display: flex; justify-content: space-between; align-items: center; padding: 10px 20px; background: var(--card-bg); border-bottom: 1px solid var(--border-color); box-shadow: var(--shadow-sm); z-index: 1000; width: 100%;">
+            <div style="width: 40px;"></div> 
+            <div style="cursor: pointer; text-align: center;" onclick="window.location.hash='section-beranda'">
+                <img src="logo-triguna.png" alt="Logo" class="brand-logo" onerror="this.src='https://via.placeholder.com/40x40?text=CBT'" style="height: 45px; margin: 0 auto;">
+                <div id="realtime-clock" style="font-size: 0.72rem; font-weight: 800; color: var(--text-muted); margin-top: 3px; letter-spacing: 0.2px; text-transform: uppercase;">...</div>
+            </div>
+            <div style="display:flex; align-items:center; gap:8px;">
+                <button id="btn-open-akun-saya" class="btn-icon" title="Akun Saya" style="font-size: 1.2rem;"><i class="fas fa-user-circle"></i></button>
+                <button id="btn-global-dark-mode" class="btn-icon" title="Mode Gelap/Terang" style="font-size: 1.4rem; color: var(--text-muted); border: none; background: transparent; cursor: pointer; padding: 5px; transition: 0.3s;">
+                    <i class="fas fa-moon"></i>
+                </button>
+            </div>
+        </header>
+
+        <div class="main-wrapper">
+            <main class="main-content">
+                <div id="section-beranda" class="content-section active">
+                    <div class="welcome-banner" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
+                        <div>
+                            <h2 style="color: white; font-size: 1.4rem; margin: 0 0 5px 0; font-weight: 700; line-height: 1.5;" id="greeting-text">Assalamu'alaikum 🙏</h2>
+                            <p style="color: var(--primary-light); font-weight: 500; font-size: 0.95rem; margin: 0;">Selamat Datang di Portal CBT TRIGUNA 1956</p>
+                        </div>
+                        <button id="btn-mode-siswa" class="btn-3d" style="background-color: var(--warning); color: white; padding: 10px 20px; border-radius: 8px; font-weight: bold; border: none; cursor: pointer; display: flex; align-items: center; gap: 8px; margin: 0; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                            <i class="fas fa-laptop-code"></i> Tinjau Ujian (Mode Siswa)
+                        </button>
+                    </div>
+                    <div class="stats-grid">
+                        <div class="stat-card" id="menu-pengguna" onclick="window.location.hash='section-pengguna'">
+                            <div><p>Akses Pengguna</p><h3 id="stat-siswa">0</h3></div><div style="color: var(--info);"><i class="fas fa-users"></i></div>
+                        </div>
+                        <div class="stat-card" onclick="window.location.hash='section-soal'">
+                            <div><p>Bank Soal</p><h3 id="stat-soal">0</h3></div><div style="color: var(--warning);"><i class="fas fa-file-alt"></i></div>
+                        </div>
+                        <div class="stat-card" onclick="window.location.hash='section-hasil'">
+                            <div><p>Capaian Siswa</p><h3 id="stat-ujian">0</h3></div><div style="color: var(--success);"><i class="fas fa-chart-bar"></i></div>
+                        </div>
+                    </div>
+                    <div class="card" style="padding: 25px; margin-bottom: 20px;">
+                        <h3 style="margin-top: 0; font-size: 1.15rem; color: var(--secondary); margin-bottom: 20px;"><i class="fas fa-chart-line"></i> Grafik Partisipasi Siswa per Mata Pelajaran</h3>
+                        <div style="position: relative; height: 350px; width: 100%;">
+                            <canvas id="chartPartisipasiMapel"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="section-soal" class="content-section">
+                    <div class="card" style="padding: 0; margin-bottom: 20px; overflow: hidden;">
+                        <div style="padding: 15px 25px; display: flex; justify-content: space-between; align-items: center; background: #f8fafc;">
+                            <h3 style="margin: 0; font-size: 1.15rem; color: var(--secondary);"><i class="fas fa-file-alt"></i> Bank Soal</h3>
+                        </div>
+                        <div id="container-bank-soal" style="display: block; padding: 25px; background: #ffffff; border-top: 1px solid #f1f5f9;">
+                            
+                            <div id="view-summary-bank-soal">
+                                <div style="display: flex; justify-content: flex-end; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;">
+                                    <button id="btn-download-semua-soal" class="btn-3d" style="margin: 0; background-color: #0f766e; display:none;" title="Download seluruh bank soal ke Excel"><i class="fas fa-file-excel"></i> Download Semua</button>
+                                    <button id="btn-open-data-master" class="btn-3d" style="margin: 0; background-color: var(--info);"><i class="fas fa-database"></i> Data Master</button>
+                                    <button id="btn-tambah-langsung" class="btn-3d" style="margin: 0; background-color: var(--success);"><i class="fas fa-file-import"></i> Input Soal</button>
+                                </div>
+                                <div class="table-container">
+                                    <table id="table-bank-soal-summary">
+                                        <thead>
+                                            <tr>
+                                                <th style="width: 20%;">Mata Pelajaran</th>
+                                                <th style="width: 20%;">Kelas</th>
+                                                <th style="width: 15%;">Jadwal Ujian</th>
+                                                <th style="width: 12%;">Durasi</th>
+                                                <th style="width: 15%;">Token</th>
+                                                <th style="width: 8%; text-align: center;">Jml Soal</th>
+                                                <th style="width: 10%; text-align: center;">Aksi</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody><tr><td colspan="7" style="text-align:center;">Memuat data...</td></tr></tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <div id="view-soal-list" style="display: none;">
+                                <input type="hidden" id="filter-soal-mapel">
+                                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 15px; margin-bottom: 20px;">
+                                    <div style="display: flex; align-items: center; gap: 15px;">
+                                        <button id="btn-back-mapel-list" class="btn-3d btn-secondary" style="margin: 0; padding: 8px 15px; border-radius: 8px;" title="Kembali"><i class="fas fa-arrow-left"></i></button>
+                                        <h4 style="margin: 0; color: var(--secondary); font-size: 1.1rem;" id="label-mapel-edit">Kelola Soal: Mata Pelajaran</h4>
+                                    </div>
+                                </div>
+                                <div id="list-soal" style="display: flex; flex-direction: column; gap: 10px;"></div>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+
+                <div id="section-pengguna" class="content-section">
+                    <div id="admin-manajemen-pengguna">
+                        <div class="card" style="padding: 0; margin-bottom: 20px; overflow: hidden;">
+                            <div style="padding: 15px 25px; display: flex; justify-content: space-between; align-items: center; background: #ffffff; flex-wrap: wrap; gap: 10px;">
+                                <div style="display: flex; align-items: center; gap: 15px;">
+                                    <h3 style="margin: 0; font-size: 1.15rem; color: var(--secondary);"><i class="fas fa-list"></i> Akses Pengguna</h3>
+                                    <button id="btn-open-manajemen" class="btn-3d" style="padding: 6px 15px; font-size: 0.85rem; margin: 0; background-color: var(--success);" onclick="window.location.href='registrasi.html';" title="Tambah Akun"><i class="fas fa-user-plus"></i></button>
+                                </div>
+                                <div id="wrap-reg-all" style="display: flex; align-items: center; gap: 10px;">
+                                    <span style="font-size: 0.85rem; color: var(--text-muted); font-weight: bold;">Open Registrasi:</span>
+                                    <label class="switch"><input type="checkbox" id="status-reg-all"><span class="slider"></span></label>
+                                </div>
+                            </div>
+                            <div id="container-daftar-pengguna" style="display: block; padding: 25px; background: #ffffff; border-top: 1px solid #f1f5f9;">
+                                
+                                <div class="toggle-accordion" data-target="container-guru" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; cursor: pointer; padding: 10px; background: #f8fafc; border-radius: 8px;">
+                                    <h4 style="margin: 0; color: var(--info); font-size: 1.05rem;"><i class="fas fa-chalkboard-teacher"></i> Akun Guru</h4>
+                                    <i class="fas fa-chevron-up toggle-icon" style="transition: 0.3s;"></i>
+                                </div>
+                                <div id="container-guru" class="table-container" style="margin-bottom: 30px;">
+                                    <table id="table-guru">
+                                        <thead>
+                                            <tr id="row-filter-guru" style="background: #f8fafc;">
+                                                <th style="padding: 8px !important;"><input type="text" id="search-guru-id" class="input-text" placeholder="Cari ID..." style="font-size: 0.8rem; padding: 8px; width: 100%;" autocomplete="off"></th>
+                                                <th style="padding: 8px !important;"><input type="text" id="search-guru-nama" class="input-text" placeholder="Cari Nama..." style="font-size: 0.8rem; padding: 8px; width: 100%;" autocomplete="off"></th>
+                                                <th style="padding: 8px !important;"><input type="text" id="search-guru-role" class="input-text" placeholder="Cari Role..." style="font-size: 0.8rem; padding: 8px; width: 100%;" autocomplete="off"></th>
+                                                <th style="padding: 8px !important;"><input type="text" id="search-guru-detail" class="input-text" placeholder="Cari Detail..." style="font-size: 0.8rem; padding: 8px; width: 100%;" autocomplete="off"></th>
+                                                <th id="th-filter-aksi-guru" style="display:none; padding: 8px !important;"></th>
+                                            </tr>
+                                        </thead>
+                                        <tbody></tbody>
+                                    </table>
+                                </div>
+
+                                <div class="toggle-accordion" data-target="container-gmail" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; cursor: pointer; padding: 10px; background: #f8fafc; border-radius: 8px;">
+                                    <h4 style="margin: 0; color: var(--danger); font-size: 1.05rem;"><i class="fab fa-google"></i> Akun Google</h4>
+                                    <i class="fas fa-chevron-up toggle-icon" style="transition: 0.3s;"></i>
+                                </div>
+                                <div id="container-gmail" class="table-container" style="margin-bottom: 30px;">
+                                    <table id="table-gmail">
+                                        <thead>
+                                            <tr id="row-filter-gmail" style="background: #f8fafc;">
+                                                <th style="padding: 8px !important;"><input type="text" id="search-gmail-email" class="input-text" placeholder="Cari Email..." style="font-size: 0.8rem; padding: 8px; width: 100%;" autocomplete="off"></th>
+                                                <th style="padding: 8px !important;"><input type="text" id="search-gmail-nama" class="input-text" placeholder="Cari Nama..." style="font-size: 0.8rem; padding: 8px; width: 100%;" autocomplete="off"></th>
+                                                <th style="padding: 8px !important;"><input type="text" id="search-gmail-role" class="input-text" placeholder="Cari Role..." style="font-size: 0.8rem; padding: 8px; width: 100%;" autocomplete="off"></th>
+                                                <th style="padding: 8px !important;"></th>
+                                                <th id="th-filter-aksi-gmail" style="display:none; padding: 8px !important;"></th>
+                                            </tr>
+                                        </thead>
+                                        <tbody></tbody>
+                                    </table>
+                                </div>
+
+                                <div class="toggle-accordion" data-target="container-siswa" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; cursor: pointer; padding: 10px; background: #f8fafc; border-radius: 8px;">
+                                    <h4 style="margin: 0; color: var(--success); font-size: 1.05rem;"><i class="fas fa-user-graduate"></i> Akun Siswa</h4>
+                                    <i class="fas fa-chevron-up toggle-icon" style="transition: 0.3s;"></i>
+                                </div>
+                                <div id="container-siswa" class="table-container">
+                                    <table id="table-siswa">
+                                        <thead>
+                                            <tr id="row-filter-siswa" style="background: #f8fafc;">
+                                                <th style="padding: 8px !important;"><input type="text" id="search-siswa-nis" class="input-text" placeholder="Cari NIS..." style="font-size: 0.8rem; padding: 8px; width: 100%;" autocomplete="off"></th>
+                                                <th style="padding: 8px !important;"><input type="text" id="search-siswa-nama" class="input-text" placeholder="Cari Nama..." style="font-size: 0.8rem; padding: 8px; width: 100%;" autocomplete="off"></th>
+                                                <th style="padding: 8px !important;"><input type="text" id="search-siswa-role" class="input-text" placeholder="Cari Role..." style="font-size: 0.8rem; padding: 8px; width: 100%;" autocomplete="off"></th>
+                                                <th style="padding: 8px !important;"><input type="text" id="search-siswa-kelas" class="input-text" placeholder="Cari Kelas..." style="font-size: 0.8rem; padding: 8px; width: 100%;" autocomplete="off"></th>
+                                                <th id="th-filter-aksi-siswa" style="display:none; padding: 8px !important;"></th>
+                                            </tr>
+                                        </thead>
+                                        <tbody></tbody>
+                                    </table>
+                                    <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--border-color);">
+                                        <button onclick="window.downloadDaftarPengguna()" class="btn-3d" style="background-color: #059669; padding: 10px 20px;">
+                                            <i class="fas fa-file-download"></i> Download Daftar Pengguna (.xlsx)
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="section-hasil" class="content-section">
+                    <div id="hasil-summary-view">
+                        <div class="card" style="padding: 0; margin-bottom: 20px; overflow: hidden;">
+                            <div style="padding: 15px 25px; display: flex; justify-content: space-between; align-items: center; background: #f8fafc;">
+                                <h3 style="margin: 0; font-size: 1.15rem; color: var(--secondary);"><i class="fas fa-chart-bar"></i> Capaian Siswa</h3>
+                            </div>
+                            <div id="container-rekap-hasil" style="display: block; padding: 25px; background: #ffffff; border-top: 1px solid #f1f5f9;">
+                                <div class="stats-grid" id="grid-mapel-hasil"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="hasil-detail-view" style="display: none;">
+                        <div class="card">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
+                                <div style="display: flex; align-items: center; gap: 10px;">
+                                    <button onclick="window.location.hash='section-hasil'" class="btn-3d btn-secondary" style="margin: 0; padding: 8px 15px; border-radius: 8px;" title="Kembali"><i class="fas fa-arrow-left"></i></button>
+                                    <h2 id="label-mapel-detail" style="margin: 0; font-size: 1.15rem; color: var(--secondary); font-weight: 700;">MAPEL</h2>
+                                </div>
+                                <div style="display: flex; gap: 10px;">
+                                    <button id="btn-hapus-semua-hasil" class="btn-3d" style="background-color: var(--danger); margin: 0; padding: 6px 15px; font-size: 0.85rem;"><i class="fas fa-trash-alt"></i> KOSONGKAN HASIL</button>
+                                    <button onclick="window.downloadExcelHasil()" class="btn-3d" style="background-color: #2563eb; margin: 0; padding: 6px 15px; font-size: 0.85rem;"><i class="fas fa-file-excel"></i> DOWNLOAD EXCEL</button>
+                                </div>
+                            </div>
+                            <div class="table-container">
+                                <table id="table-hasil">
+                                    <thead>
+                                        <tr>
+                                            <th>No</th>
+                                            <th>Nama Siswa</th>
+                                            <th>NIS / Email</th>
+                                            <th style="text-align: center;">Nilai Akhir</th>
+                                            <th style="text-align: center;">Pelanggaran</th>
+                                            <th style="text-align: center;">Status</th>
+                                            <th style="text-align: center;">Waktu</th>
+                                            <th style="text-align: center;">Aksi</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <button id="btn-logout" class="btn-3d" style="position: fixed; bottom: 20px; right: 20px; background: var(--danger); width: 50px; height: 50px; border-radius: 50%; padding: 0; display: flex; justify-content: center; align-items: center; box-shadow: var(--shadow-lg);" title="Keluar">
+        <i class="fas fa-sign-out-alt"></i>
+    </button>
+
+    <div id="modal-akun-saya" class="modal" style="display: none; position: fixed; inset: 0; align-items: center; justify-content: center; z-index: 11000; background: rgba(15,23,42,0.82); padding: 20px;">
+        <div class="modal-content" style="background: var(--card-bg, #fff); width: 520px; max-width: 100%; max-height: 90vh; overflow-y: auto; padding: 28px 24px; border-radius: 14px; box-shadow: var(--shadow-lg);">
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:18px;">
+                <h3 style="margin:0; color:var(--secondary);"><i class="fas fa-user-circle"></i> Akun Saya</h3>
+                <button type="button" id="btn-close-akun-saya" class="btn-icon" title="Tutup"><i class="fas fa-times"></i></button>
+            </div>
+            <div id="account-status" class="auth-status info" role="status" aria-live="polite">Perbarui data akun Anda.</div>
+            <form id="form-akun-saya">
+                <div class="input-group"><label>Nama Lengkap</label><input type="text" id="account-name" class="input-text" autocomplete="name" required></div>
+                <div class="input-group"><label>Username / NIS / ID Guru</label><input type="text" id="account-username" class="input-text" autocomplete="username" required></div>
+                <div class="input-group"><label>Role</label><input type="text" id="account-role" class="input-text" readonly style="background:var(--bg-main,#f8fafc); font-weight:700;"></div>
+
+                <div id="account-password-section" style="display:none; margin-top: 22px; padding-top: 18px; border-top:1px solid var(--border-color);">
+                    <h4 style="margin:0 0 12px; color:var(--secondary);"><i class="fas fa-key"></i> Keamanan Password</h4>
+                    <p style="font-size:.8rem; color:var(--text-muted); margin:0 0 12px;">Password lama diperlukan saat mengganti username atau password.</p>
+                    <div class="input-group"><label>Password Lama</label><input type="password" id="account-current-password" class="input-text" autocomplete="current-password" placeholder="Masukkan password lama"></div>
+                    <div class="input-group"><label>Password Baru (opsional)</label><input type="password" id="account-new-password" class="input-text" autocomplete="new-password" placeholder="Minimal 6 karakter"></div>
+                    <div class="input-group"><label>Konfirmasi Password Baru</label><input type="password" id="account-confirm-password" class="input-text" autocomplete="new-password" placeholder="Ulangi password baru"></div>
+                </div>
+
+                <button type="submit" id="btn-save-akun-saya" class="btn-3d" style="width:100%; margin-top:10px; background-color:var(--success);"><i class="fas fa-save"></i> Simpan Perubahan</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="modal-custom-alert" class="modal" style="display: none; position: fixed; top:0; left:0; width:100%; height:100%; align-items: center; justify-content: center; z-index: 10000; background: rgba(15,23,42,0.8);">
+        <div class="modal-content" style="background: white; width: 400px; max-width: 90%; text-align: center; padding: 35px 25px; border-radius: 10px;">
+            <i id="alert-icon" class="fas fa-info-circle fa-4x" style="color: var(--info); margin-bottom: 15px;"></i>
+            <h3 id="alert-title" style="margin-bottom: 10px;">Informasi</h3>
+            <p id="alert-message" style="margin-bottom: 25px; color: #475569;">Pesan</p>
+            <button id="btn-alert-ok" class="btn-3d" style="width: 100%;">OK, Mengerti</button>
+        </div>
+    </div>
+
+    <div id="modal-custom-confirm" class="modal" style="display: none; position: fixed; top:0; left:0; width:100%; height:100%; align-items: center; justify-content: center; z-index: 10000; background: rgba(15,23,42,0.8);">
+        <div class="modal-content" style="background: white; width: 400px; max-width: 90%; text-align: center; padding: 35px 25px; border-radius: 10px;">
+            <i id="confirm-icon" class="fas fa-question-circle fa-4x" style="color: var(--warning); margin-bottom: 15px;"></i>
+            <h3 id="confirm-title" style="margin-bottom: 10px;">Konfirmasi</h3>
+            <p id="confirm-message" style="margin-bottom: 25px; color: #475569;">Apakah Anda yakin?</p>
+            <div style="display: flex; gap: 10px;">
+                <button id="btn-confirm-cancel" class="btn-3d btn-secondary" style="flex:1;">Batal</button>
+                <button id="btn-confirm-ok" class="btn-3d" style="flex:1;">Ya, Lanjutkan</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-data-master" class="modal" style="display: none; position: fixed; top:0; left:0; width:100%; height:100%; align-items: center; justify-content: center; z-index: 10000; background: rgba(15,23,42,0.8);">
+        <div class="modal-content" style="background: white; width: 600px; max-width: 90%; padding: 35px 25px; border-radius: 10px;">
+            <span class="close-btn" id="close-modal-data-master" style="float: right; cursor: pointer; font-size: 1.5rem;">&times;</span>
+            <h3 style="margin-top: 0;">Data Master</h3>
+            <div style="display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap;">
+                <select id="input-master-type" class="input-text" style="flex: 1; min-width: 140px;">
+                    <option value="mapel">Mata Pelajaran</option>
+                    <option value="kelas">Kelas</option>
+                </select>
+                <input type="text" id="input-master-name" class="input-text" placeholder="Ketik nama data..." style="flex: 2; min-width: 150px;">
+                <button id="btn-add-master" class="btn-3d" style="white-space: nowrap; padding: 10px 15px;">Tambah</button>
+            </div>
+            <button id="btn-edit-master-mode" class="btn-3d btn-secondary" style="margin-bottom: 15px; width: 100%;"><i class="fas fa-edit"></i> Mode Hapus Data</button>
+            <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+                <div style="flex: 1; min-width: 200px;"><h4>Mapel (<span id="count-mapel">0</span>)</h4><div id="list-master-mapel" style="display: flex; flex-direction: column; gap: 10px;"></div></div>
+                <div style="flex: 1; min-width: 200px;"><h4>Kelas (<span id="count-kelas">0</span>)</h4><div id="list-master-kelas" style="display: flex; flex-direction: column; gap: 10px;"></div></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-edit-akun" class="modal" style="display: none; position: fixed; top:0; left:0; width:100%; height:100%; align-items: center; justify-content: center; z-index: 10000; background: rgba(15,23,42,0.8);">
+        <div class="modal-content" style="background: white; width: 500px; max-width: 90%; padding: 35px 25px; border-radius: 10px;">
+            <span class="close-btn" id="close-modal-edit-akun" style="float: right; cursor: pointer; font-size: 1.5rem;">&times;</span>
+            <h3 style="margin-top: 0; margin-bottom: 20px;"><i class="fas fa-user-cog"></i> Edit Akun Pengguna</h3>
+            <input type="hidden" id="edit-uid">
+            <div class="input-group"><label>Nama Lengkap</label><input type="text" id="edit-nama" class="input-text" required></div>
+            <div class="input-group"><label>Username / NIS</label><input type="text" id="edit-username" class="input-text" required readonly style="background:var(--bg-main,#f8fafc);"></div>
+            <p style="font-size:.76rem;color:var(--text-muted);margin:-8px 0 15px;">Username login hanya dapat diubah oleh pemilik akun melalui menu <b>Akun Saya</b> agar Firebase Authentication dan profil tetap sinkron.</p>
+            <div class="input-group" id="admin-custom-role-group"><label>Hak Akses / Role (Multi-role)</label><div id="edit-role-container" class="checkbox-container"></div></div>
+            <div style="display: flex; gap: 10px; margin-top: -10px; margin-bottom: 15px;" id="wrap-custom-role-input">
+                <input type="text" id="input-custom-role" class="input-text" placeholder="Custom role baru..." style="padding: 8px 12px; font-size: 0.85rem;">
+                <button type="button" id="btn-add-custom-role" class="btn-3d btn-secondary" style="white-space: nowrap; padding: 0 15px; font-size: 0.85rem; margin: 0;">+ Role</button>
+            </div>
+            <div class="input-group" id="group-edit-kelas-siswa" style="display: none;"><label>Kelas Target (Siswa)</label><div id="edit-kelas-siswa-container" class="checkbox-container"></div></div>
+            <div id="group-edit-guru" style="display: none; flex-direction: column; gap: 15px; margin-bottom: 20px;">
+                <div class="input-group" style="margin: 0;"><label>Mata Pelajaran yang Diampu</label><div id="edit-mapel-container" class="checkbox-container"></div></div>
+                <div class="input-group" id="group-edit-kelas-guru" style="margin: 0;"><label>Kelas yang Diajar</label><div id="edit-kelas-guru-container" class="checkbox-container"></div></div>
+            </div>
+            <div style="background:#eff6ff;color:#1e40af;border:1px solid #bfdbfe;padding:10px 12px;border-radius:8px;font-size:.8rem;margin-bottom:15px;">Password pengguna diubah dari menu <b>Akun Saya</b> pada akun masing-masing. Admin tidak menyimpan password melalui Firestore.</div>
+            <button id="btn-save-edit-akun" class="btn-3d" style="width: 100%; background-color: var(--success);"><i class="fas fa-save"></i> Perbarui Akun</button>
+        </div>
+    </div>
+
+    <div id="modal-detail-jawaban" class="modal" style="display: none; position: fixed; top:0; left:0; width:100%; height:100%; align-items: center; justify-content: center; z-index: 10000; background: rgba(15,23,42,0.8);">
+        <div class="modal-content" style="background: white; width: 800px; max-width: 95%; max-height: 90vh; overflow-y: auto; padding: 35px 25px; border-radius: 10px;">
+            <span class="close-btn" onclick="document.getElementById('modal-detail-jawaban').style.display='none'" style="float: right; cursor: pointer; font-size: 1.5rem;">&times;</span>
+            <h3 style="margin-top: 0;">Detail Jawaban Siswa</h3>
+            <p id="detail-nama-siswa" style="font-weight: bold; color: var(--info);"></p>
+            <input type="hidden" id="edit-id-hasil">
+            <div class="input-group" style="margin-top: 15px; background: #f8fafc; padding: 15px; border-radius: 8px;">
+                <label>Ubah Nilai Akhir Secara Manual</label>
+                <div style="display: flex; gap: 10px;">
+                    <input type="number" id="edit-nilai-siswa" class="input-text" style="width: 150px;" placeholder="Skor...">
+                    <button id="btn-simpan-nilai-baru" class="btn-3d">Simpan Nilai</button>
+                </div>
+            </div>
+            <div id="container-jawaban-siswa" style="margin-top: 20px; display: flex; flex-direction: column; gap: 15px;"></div>
+        </div>
+    </div>
+
+    <div id="modal-tambah-soal" class="modal" style="display: none; position: fixed; top:0; left:0; width:100%; height:100%; align-items: center; justify-content: center; z-index: 10000; background: rgba(15,23,42,0.75); backdrop-filter: blur(4px);">
+        <div class="modal-content" style="background: white; width: 740px; max-width: 96%; max-height: 92vh; overflow: hidden; border-radius: 18px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); display:flex; flex-direction:column;">
+            <div style="padding: 18px 24px; border-bottom: 1px solid var(--border-color); display:flex; justify-content:space-between; align-items:center; background: linear-gradient(to right, #ffffff, #f8fafc);">
+                <div style="display:flex; align-items:center; gap:12px;">
+                    <div style="width:40px; height:40px; background:var(--primary-light); color:var(--primary); border-radius:10px; display:flex; align-items:center; justify-content:center;"><i class="fas fa-pen-to-square"></i></div>
+                    <div>
+                        <h3 id="title-modal-soal" style="margin:0; font-size:1.15rem; font-weight:700; color:var(--secondary);">Input Soal</h3>
+                        <p style="margin:2px 0 0; font-size:0.8rem; color:var(--text-muted);">Buat soal yang rapi dan mudah dibaca siswa</p>
+                    </div>
+                </div>
+                <button onclick="document.getElementById('modal-tambah-soal').style.display='none'" style="background:#f8fafc; border:none; width:34px; height:34px; border-radius:8px; cursor:pointer; color:var(--text-muted); font-size:1.1rem;">&times;</button>
+            </div>
+
+            <form id="form-tambah-soal" style="padding: 22px 24px; overflow-y:auto; flex:1;">
+                <input type="hidden" id="edit-soal-id">
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:14px; margin-bottom:14px;">
+                    <div class="input-group" style="margin:0;"><select id="soal-mapel" class="input-text" required style="background:white; padding:11px 14px; font-weight: 600;"></select></div>
+                    <div class="input-group" id="group-soal-kelas" style="margin:0;">
+                        <div class="dropdown-check" id="dd-soal-kelas">
+                            <button type="button" class="dropdown-check-btn" onclick="window.toggleDropdownCheck('dd-soal-kelas')" style="padding:11px 14px; border-color:var(--border-color); background:white;">
+                                <span id="soal-kelas-label">-- Pilih Kelas --</span> <i class="fas fa-chevron-down"></i>
+                            </button>
+                            <div class="dropdown-check-content" id="soal-kelas-container" style="max-height:180px;"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="section-import-massal" style="background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 18px 20px; margin-bottom: 22px; display: flex; align-items: center; justify-content: space-between; gap: 15px; box-shadow: var(--shadow-sm); flex-wrap: wrap;">
+                    <div style="flex: 1; min-width: 200px;">
+                        <h4 style="margin: 0; color: var(--secondary); font-size: 1rem; font-weight: 700;"><i class="fas fa-bolt" style="color: var(--warning);"></i> Import Massal Soal</h4>
+                        <p style="margin: 2px 0 0; font-size: 0.8rem; color: var(--text-muted);">Unduh template, isi soal, lalu upload ke sistem.</p>
+                    </div>
+                    <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+                        <button type="button" onclick="window.downloadTemplate('excel')" class="btn-icon" style="background:#ecfdf5; color:#059669; padding: 8px 12px; font-size: 0.85rem; border: 1px solid #a7f3d0;" title="Template Excel"><i class="fas fa-file-excel"></i> Excel</button>
+                        <button type="button" onclick="window.downloadTemplate('word')" class="btn-icon" style="background:#eff6ff; color:#2563eb; padding: 8px 12px; font-size: 0.85rem; border: 1px solid #bfdbfe;" title="Template Word"><i class="fas fa-file-word"></i> Word</button>
+                        <button type="button" id="btn-import-gdrive" class="btn-icon" style="background:#fffbeb; color:#d97706; padding: 8px 12px; font-size: 0.85rem; border: 1px solid #fde68a;" title="Google Drive"><i class="fas fa-cloud"></i> Drive</button>
+                        <div style="width: 1px; height: 28px; background: var(--border-color); margin: 0 4px; display: inline-block;"></div>
+                        <label for="upload-excel-soal" class="btn-upload-elegant"><i class="fas fa-cloud-upload-alt"></i> Upload</label>
+                        <input type="file" id="upload-excel-soal" accept=".xlsx,.xls,.docx" style="display:none;">
+                    </div>
+                </div>
+
+                <div id="divider-import-manual" style="display:flex; align-items:center; gap:10px; margin:22px 0;">
+                    <div style="flex:1; height:1px; background:#e2e8f0;"></div>
+                    <span style="font-size:0.72rem; font-weight:700; color:#64748b; background:#f1f5f9; padding:4px 12px; border-radius:20px;">Input Manual di bawah ini</span>
+                    <div style="flex:1; height:1px; background:#e2e8f0;"></div>
+                </div>
+
+                <div style="display:flex; flex-wrap:wrap; gap:12px; margin-bottom:20px;">
+                    <div class="input-group" style="margin:0; width: 70px; flex-shrink: 0;">
+                        <label style="font-weight:600;">No</label>
+                        <input type="number" id="soal-nomor" class="input-text" placeholder="1" min="1" required style="text-align:center; font-weight:700; font-size:1.05rem; padding:10px;">
+                    </div>
+                    <div class="input-group" style="margin:0; width: 80px; flex-shrink: 0;">
+                        <label style="font-weight:600;">Bobot</label>
+                        <input type="number" id="soal-bobot" class="input-text" value="1" min="1" style="text-align:center; font-weight:700; color:#d97706; background:#fffbeb; border-color:#fde68a; padding:10px;">
+                    </div>
+                    <div class="input-group" style="margin:0; flex: 1; min-width: 180px;">
+                        <label style="font-weight:600;">Tipe Soal</label>
+                        <select id="soal-tipe" class="input-text" required style="padding:10px;">
+                            <option value="PG">Pilihan Ganda</option>
+                            <option value="PGK">Pilihan Ganda Kompleks</option>
+                            <option value="Menjodohkan">Menjodohkan</option>
+                            <option value="Essay">Essay / Uraian</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="input-group" style="margin-bottom:16px;">
+                    <label style="display:flex; align-items:center; gap:6px; font-weight:700; color:var(--secondary);"><i class="fas fa-align-left" style="color:#10b981;"></i> Pertanyaan</label>
+                    <textarea id="soal-teks" class="input-text" rows="4" placeholder="Tulis pertanyaan dengan jelas..." required style="min-height:100px; font-size:0.98rem; line-height:1.6; background:white;"></textarea>
+                </div>
+
+                <div class="input-group" style="background:#f8fafc; border:1px solid var(--border-color); border-radius:10px; padding:14px; margin-bottom:18px;">
+                    <label style="font-weight:600; margin-bottom:8px; display:block; font-size:0.88rem;"><i class="fas fa-paperclip" style="color:#0ea5e9;"></i> Media Utama (opsional)</label>
+                    <div style="display:flex; gap:16px; margin-bottom:8px;">
+                        <label style="display:flex; align-items:center; gap:5px; font-size:0.85rem; cursor:pointer;"><input type="radio" name="tipe_media_utama" value="file" checked onchange="document.getElementById('soal-media').style.display='block'; document.getElementById('soal-media-url').style.display='none';"> Upload File</label>
+                        <label style="display:flex; align-items:center; gap:5px; font-size:0.85rem; cursor:pointer;"><input type="radio" name="tipe_media_utama" value="url" onchange="document.getElementById('soal-media').style.display='none'; document.getElementById('soal-media-url').style.display='block';"> Link Media</label>
+                    </div>
+                    <input type="file" id="soal-media" class="input-text" accept="image/*,video/*,audio/*" style="background:white; padding:8px; font-size:0.85rem;">
+                    <input type="text" id="soal-media-url" class="input-text" placeholder="https://... (URL Gambar/Video/Audio dari internet)" style="display:none; background:white; font-size:0.85rem;">
+                </div>
+
+                <div id="opsi-container">
+                    <div id="pg-options" style="display:none;">
+                        <label style="font-weight:700; margin-bottom:10px; display:block; font-size:0.9rem;"><i class="fas fa-list-ol" style="color:#10b981;"></i> Opsi Jawaban</label>
+                        <div style="display:flex; flex-direction:column; gap:10px;">
+                            <div style="background:white; border:1px solid #e2e8f0; border-radius:10px; padding:12px;">
+                                <div style="display:flex; gap:10px;">
+                                    <div style="width:28px; height:28px; background:#ecfdf5; color:#059669; border-radius:7px; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:0.85rem; flex-shrink:0;">A</div>
+                                    <div style="flex:1;">
+                                        <input type="text" id="soal-opsi-A" class="input-text" placeholder="Opsi A..." style="margin-bottom:6px; padding:8px 10px; font-size:0.9rem; background:#fcfcfc;">
+                                        <div style="display:flex; gap:10px; align-items:center;">
+                                            <select id="tipe-media-opsi-A" class="input-text" style="width: 70px; padding: 4px; font-size: 0.75rem;" onchange="document.getElementById('media-opsi-A').style.display = this.value === 'file' ? 'block' : 'none'; document.getElementById('media-url-opsi-A').style.display = this.value === 'url' ? 'block' : 'none';">
+                                                <option value="file">File</option><option value="url">URL</option>
+                                            </select>
+                                            <input type="file" id="media-opsi-A" accept="image/*,video/*,audio/*" style="flex:1; font-size:0.75rem;">
+                                            <input type="text" id="media-url-opsi-A" class="input-text" placeholder="https://..." style="flex:1; font-size:0.75rem; display:none;">
+                                            <label class="kunci-pg-container" style="display:flex; align-items:center; gap:4px; font-size:0.78rem; color:#059669; font-weight:600; white-space:nowrap;"><input type="radio" name="kunci-pg" value="A"> Kunci</label>
+                                            <label class="kunci-pgk-container" style="display:none; align-items:center; gap:4px; font-size:0.78rem; color:#0284c7; font-weight:600;"><input type="checkbox" class="kunci-pgk" value="A"> Benar</label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div style="background:white; border:1px solid #e2e8f0; border-radius:10px; padding:12px;">
+                                <div style="display:flex; gap:10px;">
+                                    <div style="width:28px; height:28px; background:#ecfdf5; color:#059669; border-radius:7px; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:0.85rem; flex-shrink:0;">B</div>
+                                    <div style="flex:1;">
+                                        <input type="text" id="soal-opsi-B" class="input-text" placeholder="Opsi B..." style="margin-bottom:6px; padding:8px 10px; font-size:0.9rem; background:#fcfcfc;">
+                                        <div style="display:flex; gap:10px; align-items:center;">
+                                            <select id="tipe-media-opsi-B" class="input-text" style="width: 70px; padding: 4px; font-size: 0.75rem;" onchange="document.getElementById('media-opsi-B').style.display = this.value === 'file' ? 'block' : 'none'; document.getElementById('media-url-opsi-B').style.display = this.value === 'url' ? 'block' : 'none';">
+                                                <option value="file">File</option><option value="url">URL</option>
+                                            </select>
+                                            <input type="file" id="media-opsi-B" accept="image/*,video/*,audio/*" style="flex:1; font-size:0.75rem;">
+                                            <input type="text" id="media-url-opsi-B" class="input-text" placeholder="https://..." style="flex:1; font-size:0.75rem; display:none;">
+                                            <label class="kunci-pg-container" style="display:flex; align-items:center; gap:4px; font-size:0.78rem; color:#059669; font-weight:600; white-space:nowrap;"><input type="radio" name="kunci-pg" value="B"> Kunci</label>
+                                            <label class="kunci-pgk-container" style="display:none; align-items:center; gap:4px; font-size:0.78rem; color:#0284c7; font-weight:600;"><input type="checkbox" class="kunci-pgk" value="B"> Benar</label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div style="background:white; border:1px solid #e2e8f0; border-radius:10px; padding:12px;">
+                                <div style="display:flex; gap:10px;">
+                                    <div style="width:28px; height:28px; background:#ecfdf5; color:#059669; border-radius:7px; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:0.85rem; flex-shrink:0;">C</div>
+                                    <div style="flex:1;">
+                                        <input type="text" id="soal-opsi-C" class="input-text" placeholder="Opsi C..." style="margin-bottom:6px; padding:8px 10px; font-size:0.9rem; background:#fcfcfc;">
+                                        <div style="display:flex; gap:10px; align-items:center;">
+                                            <select id="tipe-media-opsi-C" class="input-text" style="width: 70px; padding: 4px; font-size: 0.75rem;" onchange="document.getElementById('media-opsi-C').style.display = this.value === 'file' ? 'block' : 'none'; document.getElementById('media-url-opsi-C').style.display = this.value === 'url' ? 'block' : 'none';">
+                                                <option value="file">File</option><option value="url">URL</option>
+                                            </select>
+                                            <input type="file" id="media-opsi-C" accept="image/*,video/*,audio/*" style="flex:1; font-size:0.75rem;">
+                                            <input type="text" id="media-url-opsi-C" class="input-text" placeholder="https://..." style="flex:1; font-size:0.75rem; display:none;">
+                                            <label class="kunci-pg-container" style="display:flex; align-items:center; gap:4px; font-size:0.78rem; color:#059669; font-weight:600; white-space:nowrap;"><input type="radio" name="kunci-pg" value="C"> Kunci</label>
+                                            <label class="kunci-pgk-container" style="display:none; align-items:center; gap:4px; font-size:0.78rem; color:#0284c7; font-weight:600;"><input type="checkbox" class="kunci-pgk" value="C"> Benar</label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div style="background:white; border:1px solid #e2e8f0; border-radius:10px; padding:12px;">
+                                <div style="display:flex; gap:10px;">
+                                    <div style="width:28px; height:28px; background:#ecfdf5; color:#059669; border-radius:7px; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:0.85rem; flex-shrink:0;">D</div>
+                                    <div style="flex:1;">
+                                        <input type="text" id="soal-opsi-D" class="input-text" placeholder="Opsi D..." style="margin-bottom:6px; padding:8px 10px; font-size:0.9rem; background:#fcfcfc;">
+                                        <div style="display:flex; gap:10px; align-items:center;">
+                                            <select id="tipe-media-opsi-D" class="input-text" style="width: 70px; padding: 4px; font-size: 0.75rem;" onchange="document.getElementById('media-opsi-D').style.display = this.value === 'file' ? 'block' : 'none'; document.getElementById('media-url-opsi-D').style.display = this.value === 'url' ? 'block' : 'none';">
+                                                <option value="file">File</option><option value="url">URL</option>
+                                            </select>
+                                            <input type="file" id="media-opsi-D" accept="image/*,video/*,audio/*" style="flex:1; font-size:0.75rem;">
+                                            <input type="text" id="media-url-opsi-D" class="input-text" placeholder="https://..." style="flex:1; font-size:0.75rem; display:none;">
+                                            <label class="kunci-pg-container" style="display:flex; align-items:center; gap:4px; font-size:0.78rem; color:#059669; font-weight:600; white-space:nowrap;"><input type="radio" name="kunci-pg" value="D"> Kunci</label>
+                                            <label class="kunci-pgk-container" style="display:none; align-items:center; gap:4px; font-size:0.78rem; color:#0284c7; font-weight:600;"><input type="checkbox" class="kunci-pgk" value="D"> Benar</label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div style="background:white; border:1px solid #e2e8f0; border-radius:10px; padding:12px;">
+                                <div style="display:flex; gap:10px;">
+                                    <div style="width:28px; height:28px; background:#ecfdf5; color:#059669; border-radius:7px; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:0.85rem; flex-shrink:0;">E</div>
+                                    <div style="flex:1;">
+                                        <input type="text" id="soal-opsi-E" class="input-text" placeholder="Opsi E..." style="margin-bottom:6px; padding:8px 10px; font-size:0.9rem; background:#fcfcfc;">
+                                        <div style="display:flex; gap:10px; align-items:center;">
+                                            <select id="tipe-media-opsi-E" class="input-text" style="width: 70px; padding: 4px; font-size: 0.75rem;" onchange="document.getElementById('media-opsi-E').style.display = this.value === 'file' ? 'block' : 'none'; document.getElementById('media-url-opsi-E').style.display = this.value === 'url' ? 'block' : 'none';">
+                                                <option value="file">File</option><option value="url">URL</option>
+                                            </select>
+                                            <input type="file" id="media-opsi-E" accept="image/*,video/*,audio/*" style="flex:1; font-size:0.75rem;">
+                                            <input type="text" id="media-url-opsi-E" class="input-text" placeholder="https://..." style="flex:1; font-size:0.75rem; display:none;">
+                                            <label class="kunci-pg-container" style="display:flex; align-items:center; gap:4px; font-size:0.78rem; color:#059669; font-weight:600; white-space:nowrap;"><input type="radio" name="kunci-pg" value="E"> Kunci</label>
+                                            <label class="kunci-pgk-container" style="display:none; align-items:center; gap:4px; font-size:0.78rem; color:#0284c7; font-weight:600;"><input type="checkbox" class="kunci-pgk" value="E"> Benar</label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="menjodohkan-options" style="display:none;">
+                        <label style="font-weight:700; margin-bottom:8px; display:block;"><i class="fas fa-link" style="color:#f59e0b;"></i> Pasangan</label>
+                        <div id="pasangan-container" style="display:flex; flex-direction:column; gap:8px;"></div>
+                        <button type="button" id="btn-tambah-pasangan" class="btn-3d btn-secondary" style="margin-top:10px; padding:8px 12px; font-size:0.8rem;"><i class="fas fa-plus"></i> Tambah</button>
+                    </div>
+                    <div id="essay-options" style="display:none;">
+                        <div class="input-group"><label>Kunci / Rubrik</label><textarea id="soal-kunci-essay" class="input-text" rows="2" placeholder="Opsional..."></textarea></div>
+                    </div>
+                </div>
+                <button type="submit" class="btn-3d" style="width:100%; margin-top:24px; padding:13px; font-size:0.98rem; font-weight:700; background:linear-gradient(135deg, #10b981 0%, #059669 100%); border-radius:10px;"><i class="fas fa-save"></i> Simpan Soal</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="modal-edit-bank-soal" class="modal" style="display: none; position: fixed; top:0; left:0; width:100%; height:100%; align-items: center; justify-content: center; z-index: 10000; background: rgba(15,23,42,0.8);">
+        <div class="modal-content" style="background: white; width: 450px; max-width: 90%; padding: 35px 25px; border-radius: 10px;">
+            <span class="close-btn" onclick="document.getElementById('modal-edit-bank-soal').style.display='none'" style="float: right; cursor: pointer; font-size: 1.5rem;">&times;</span>
+            <h3 style="margin-top: 0; margin-bottom: 20px; color: var(--secondary);"><i class="fas fa-users"></i> Edit Kelas Sasaran</h3>
+            <input type="hidden" id="edit-bs-old-mapel">
+            <div class="input-group">
+                <label>Pilih Kelas (Centang lebih dari satu)</label>
+                <div id="edit-bs-new-kelas-container" class="checkbox-container" style="max-height: 180px; border-color: var(--primary); padding: 15px;"></div>
+            </div>
+            <div style="background: #fffbeb; color: #b45309; padding: 12px; border-radius: 8px; font-size: 0.85rem; margin-bottom: 20px; border: 1px solid #fde68a;">
+                <i class="fas fa-info-circle"></i> <b>Info:</b> Pengaturan ini akan diterapkan untuk SEMUA soal pada mata pelajaran ini secara massal.
+            </div>
+            <button id="btn-simpan-pindah-bs" class="btn-3d" style="width: 100%; background-color: var(--success);"><i class="fas fa-save"></i> Simpan Kelas</button>
+        </div>
+    </div>
+
+    <div id="modal-simulasi-siswa" class="modal" style="display: none; position: fixed; top:0; left:0; width:100%; height:100%; align-items: center; justify-content: center; z-index: 10000; background: rgba(15,23,42,0.8);">
+        <div class="modal-content" style="background: white; width: 400px; max-width: 90%; padding: 35px 25px; border-radius: 10px; text-align: center;">
+            <span class="close-btn" onclick="document.getElementById('modal-simulasi-siswa').style.display='none'" style="float: right; cursor: pointer; font-size: 1.5rem;">&times;</span>
+            <div style="background: #fffbeb; color: #d97706; width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 2rem; margin: 0 auto 15px;">
+                <i class="fas fa-user-graduate"></i>
+            </div>
+            <h3 style="margin-top: 0; color: var(--secondary); margin-bottom: 5px;">Simulasi Ujian</h3>
+            <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 20px;">Masuk ke halaman ujian untuk menguji soal dengan tampilan persis seperti siswa.</p>
+            <div class="input-group" style="text-align: left;"><label>Pilih Kelas Target Simulasi</label><select id="simulasi-kelas" class="input-text" style="width: 100%;"></select></div>
+            <button id="btn-mulai-simulasi" class="btn-3d" style="width: 100%; background: var(--info); margin-top: 10px;"><i class="fas fa-play"></i> Mulai Simulasi</button>
+        </div>
+    </div>
+
+    <div id="modal-preview-soal" class="modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; align-items:center; justify-content:center; z-index:10001; background:rgba(15,23,42,0.8); backdrop-filter:blur(6px);">
+        <div style="background:white; width:880px; max-width:96%; max-height:90vh; border-radius:18px; overflow:hidden; display:flex; flex-direction:column; box-shadow:0 2px 50px -12px rgba(0,0,0,0.3);">
+            <div style="padding:16px 22px; border-bottom:1px solid var(--border-color); display:flex; justify-content:space-between; align-items:center; background:linear-gradient(to right, #f8fafc, #ffffff);">
+                <div style="display:flex; align-items:center; gap:12px;">
+                    <div style="width:38px; height:38px; background:#dbeafe; color:#2563eb; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:1rem;"><i class="fas fa-eye"></i></div>
+                    <div><h3 id="preview-title" style="margin:0; font-size:1.08rem; font-weight:700; color:var(--secondary);">Pratinjau Soal</h3><p id="preview-subtitle" style="margin:2px 0 0; font-size:0.78rem; color:var(--text-muted);">Tampilan persis seperti siswa</p></div>
+                </div>
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <button id="btn-dark-toggle" onclick="window.togglePreviewDark()" title="Mode Gelap/Terang" style="width:34px; height:34px; background:#f1f5f9; border:1px solid #e2e8f0; border-radius:9px; cursor:pointer; color:#475569; display:flex; align-items:center; justify-content:center; transition:all 0.2s;" onmouseover="this.style.background='#e2e8f0'" onmouseout="this.style.background='#f1f5f9'"><i class="fas fa-moon" style="font-size:0.9rem;"></i></button>
+                    <button onclick="document.getElementById('modal-preview-soal').style.display='none'" style="width:34px; height:34px; background:#f1f5f9; border:none; border-radius:9px; cursor:pointer; color:#64748b; font-size:1.2rem; transition:all 0.2s;" onmouseover="this.style.background='#fee2e2'; this.style.color='#dc2626'" onmouseout="this.style.background='#f1f5f9'; this.style.color='#64748b'">×</button>
+                </div>
+            </div>
+            <div style="flex:1; overflow-y:auto; padding:24px; background:#f8fafc;">
+                <div id="preview-content" style="background:white; border:1px solid #e2e8f0; border-radius:14px; padding:26px; box-shadow:var(--shadow-sm);"></div>
+            </div>
+            <div style="padding:14px 22px; border-top:1px solid var(--border-color); background:white; display:flex; justify-content:flex-end; gap:10px;">
+                <button onclick="document.getElementById('modal-preview-soal').style.display='none'" class="btn-3d btn-secondary" style="padding:8px 16px; font-size:0.85rem; background:#475569;"><i class="fas fa-times"></i> Tutup</button>
+                <button onclick="document.getElementById('modal-preview-soal').style.display='none'; const id=window.tempDataSoalKelola.find(s=>s.nomor_soal==document.getElementById('preview-title').innerText.match(/\d+/)[0])?.id; if(id) window.editDataSoal(id);" class="btn-3d" style="padding:8px 16px; font-size:0.85rem; background:var(--primary);"><i class="fas fa-pen"></i> Edit Soal</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-import-gdrive" class="modal" style="display: none; position: fixed; top:0; left:0; width:100%; height:100%; align-items: center; justify-content: center; z-index: 10005; background: rgba(15,23,42,0.8);">
+        <div class="modal-content" style="background: white; width: 400px; max-width: 90%; text-align: center; padding: 35px 25px; border-radius: 10px;">
+            <span class="close-btn" onclick="document.getElementById('modal-import-gdrive').style.display='none'" style="float: right; cursor: pointer; font-size: 1.5rem;">&times;</span>
+            <i class="fab fa-google-drive fa-4x" style="color: var(--warning); margin-bottom: 15px;"></i>
+            <h3 style="margin-top: 0; color: var(--secondary); margin-bottom: 10px;">Import dari Google Drive</h3>
+            <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 20px;">Masukkan link Google Sheets / Docs yang telah diatur ke "Siapa saja yang memiliki link" (Public).</p>
+            <div class="input-group" style="text-align: left;"><input type="text" id="input-gdrive-url" class="input-text" placeholder="https://docs.google.com/..." style="width: 100%;"></div>
+            <button id="btn-proses-gdrive" class="btn-3d" style="width: 100%; margin-top: 10px;"><i class="fas fa-cloud-download-alt"></i> Proses & Import</button>
+        </div>
+    </div>
+
+    <div id="modal-atur-bobot-massal" class="modal" style="display: none; position: fixed; top:0; left:0; width:100%; height:100%; align-items: center; justify-content: center; z-index: 10006; background: rgba(15,23,42,0.8);">
+        <div class="modal-content" style="background: white; width: 450px; max-width: 90%; padding: 35px 25px; border-radius: 10px;">
+            <span class="close-btn" onclick="document.getElementById('modal-atur-bobot-massal').style.display='none'" style="float: right; cursor: pointer; font-size: 1.5rem;">&times;</span>
+            <h3 style="margin-top: 0; margin-bottom: 5px; color: var(--secondary);"><i class="fas fa-balance-scale"></i> Atur Bobot Massal</h3>
+            <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 20px;">Tentukan bobot poin otomatis berdasarkan tipe soal untuk paket ini.</p>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
+                <div class="input-group" style="margin: 0;"><label>Pilihan Ganda (PG)</label><input type="number" id="mass-bobot-pg" class="input-text" value="2" min="1"></div>
+                <div class="input-group" style="margin: 0;"><label>PG Kompleks (PGK)</label><input type="number" id="mass-bobot-pgk" class="input-text" value="3" min="1"></div>
+                <div class="input-group" style="margin: 0;"><label>Menjodohkan</label><input type="number" id="mass-bobot-jodoh" class="input-text" value="4" min="1"></div>
+                <div class="input-group" style="margin: 0;"><label>Essay / Uraian</label><input type="number" id="mass-bobot-essay" class="input-text" value="5" min="1"></div>
+            </div>
+            <button id="btn-simpan-bobot-massal" class="btn-3d" style="width: 100%; background-color: var(--warning);"><i class="fas fa-sync-alt"></i> Terapkan Bobot</button>
+        </div>
+    </div>
+
+    <script type="module" src="akun.js"></script>
+    <script type="module" src="dashboard.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            try {
+                const roles = JSON.parse(localStorage.getItem('userRole')) || [];
+                const isStaff = roles.includes('admin') || roles.includes('guru');
+                if (isStaff) {
+                    document.body.style.userSelect = "auto";
+                    document.body.style.webkitUserSelect = "auto";
+                    document.body.style.mozUserSelect = "auto";
+                    document.body.style.msUserSelect = "auto";
+                    window.addEventListener('contextmenu', function(e) { e.stopPropagation(); }, true);
+                }
+            } catch(e) {}
+        });
+    </script>
+</body>
+</html>

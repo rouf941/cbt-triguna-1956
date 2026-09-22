@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="id" translate="no">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="google" content="notranslate">
+    <title>CBT TRIGUNA 1956 - Login</title>
+    <link rel="icon" type="image/png" href="logo-triguna-192.png">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="manifest" href="./manifest.json">
+    <style>
+        /* --- KEAMANAN GLOBAL: ANTI COPAS, AI, & CETAK --- */
+        body { 
+            -webkit-user-select: none; 
+            -moz-user-select: none; 
+            -ms-user-select: none; 
+            user-select: none; 
+            -webkit-touch-callout: none;
+        }
+        input, textarea, select { 
+            -webkit-user-select: auto !important; 
+            -ms-user-select: auto !important; 
+            user-select: auto !important; 
+        }
+        @media print { 
+            body { display: none !important; } 
+        }
+    </style>
+</head>
+<body class="login-page-bg">
+    <script>
+        (function() {
+            // 1. Logika Auto-Theme Berdasarkan Waktu
+            const currentHour = new Date().getHours();
+            const isNightTime = currentHour >= 18 || currentHour < 6;
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme === 'dark' || (!savedTheme && isNightTime)) {
+                document.body.classList.add('dark-mode');
+                if (!savedTheme) localStorage.setItem('theme', 'dark'); 
+            } else if (savedTheme === 'light' || (!savedTheme && !isNightTime)) {
+                document.body.classList.remove('dark-mode');
+                if (!savedTheme) localStorage.setItem('theme', 'light');
+            }
+
+            // 2. Logika Jam & Tanggal Real-time di Bawah Logo
+            function inisialisasiJamSistem() {
+                const clockEl = document.getElementById('realtime-clock');
+                if (!clockEl) return;
+                function perbaruiWaktu() {
+                    const sekarang = new Date();
+                    const opsiTanggal = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+                    const strTanggal = sekarang.toLocaleDateString('id-ID', opsiTanggal);
+                    const strJam = sekarang.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' }).replace(/\./g, ':');
+                    clockEl.innerHTML = `<i class="far fa-calendar-alt"></i> ${strTanggal} &nbsp;|&nbsp; <i class="far fa-clock"></i> ${strJam} WIB`;
+                }
+                perbaruiWaktu();
+                setInterval(perbaruiWaktu, 1000);
+            }
+            document.addEventListener('DOMContentLoaded', inisialisasiJamSistem);
+        })();
+    </script>
+
+    <button id="btn-login-dark-mode" class="btn-icon" title="Mode Gelap/Terang" style="position: absolute; top: 20px; right: 20px; font-size: 1.4rem; color: var(--text-muted); border: none; background: transparent; cursor: pointer; padding: 5px; transition: 0.3s; z-index: 1000;">
+        <i class="fas fa-moon"></i>
+    </button>
+
+    <div class="login-container">
+        <div class="login-card">
+            <div class="login-header">
+                <span class="login-badge"><i class="fas fa-shield-alt"></i>CBT TRIGUNA 1956</span>
+                <img src="logo-triguna.png" alt="Logo TRIGUNA 1956" class="main-logo" onerror="this.style.display='none'">
+                
+                <div id="realtime-clock" class="realtime-clock">Menghubungkan waktu server...</div>
+            </div>
+
+            <form id="login-form">
+                <!-- Input Username -->
+                <div style="margin-bottom: 15px;">
+                    <input type="text" id="username" class="input-text" placeholder="Username / NIS / NIP" style="width: 100%; padding: 12px 15px; font-size: 0.95rem;" required autocomplete="username">
+                </div>
+                
+                <!-- Input Password -->
+                <div style="margin-bottom: 25px;">
+                    <input type="password" id="password" class="input-text" placeholder="Password" style="width: 100%; padding: 12px 15px; font-size: 0.95rem;" required autocomplete="current-password">
+                </div>
+                
+                <button type="submit" class="btn-3d" id="btn-submit" data-default-text="<i class='fas fa-sign-in-alt'></i> MASUK">
+                    <i class="fas fa-sign-in-alt"></i> MASUK
+                </button>
+            
+                <div id="login-status" class="auth-status info" role="status" aria-live="polite" style="display:block; margin-bottom: 14px; text-align:center;">Silakan masuk dengan Username/NIS/NIP atau Akun Google.</div>
+
+                <div style="text-align: center; margin: 15px 0; color: var(--text-muted);">ATAU</div>
+
+                <button type="button" id="btn-login-google" class="btn-3d" style="background-color: white; color: #475569; border: 1px solid #cbd5e1; width: 100%; display: flex; align-items: center; justify-content: center; gap: 10px;">
+                    <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google" style="width: 20px;">
+                    Masuk dengan Akun Google
+                </button>
+
+                <a href="javascript:void(0)" id="btn-install-app" class="install-link" aria-hidden="true">
+                    <i class="fas fa-download"></i> Instal CBT
+                </a>
+            
+                <div style="margin-top: 18px; font-size: 0.88rem; text-align: center;">
+                    Belum punya akun? <a href="registrasi.html" style="color: var(--primary); font-weight: bold; text-decoration: none;">Daftar di sini</a>
+                </div>
+                <div style="margin-top: 10px; text-align: center; font-size: 0.74rem; color: var(--text-muted);">
+                    Sistem CBT TRIGUNA 1956 • Firebase Project: cbt-triguna-1956
+                </div>
+            </form>
+            
+            <div class="login-footer" style="margin-top: 20px; text-align: center; font-size: 0.8rem; color: var(--text-muted);">
+                &copy; 2026 IT Support TRIGUNA 1956. All rights reserved.
+            </div>
+        </div>
+    </div>
+
+    <script>
+    // Hanya sisakan script untuk PWA (Service Worker) dan Prompt Install
+    let deferredPrompt; 
+    const installBtn = document.getElementById('btn-install-app');
+    if (installBtn) {
+        installBtn.style.display = 'none';
+        window.addEventListener('beforeinstallprompt', (e) => { 
+            e.preventDefault(); 
+            deferredPrompt = e; 
+            installBtn.style.display = 'block'; 
+            installBtn.setAttribute('aria-hidden', 'false'); 
+        });
+        installBtn.addEventListener('click', async () => { 
+            if (deferredPrompt) { 
+                deferredPrompt.prompt(); 
+                const { outcome } = await deferredPrompt.userChoice; 
+                if (outcome === 'accepted') { installBtn.style.display = 'none'; } 
+                deferredPrompt = null; 
+            } 
+        });
+    }
+</script>
+<script type="module" src="index.js?v=20260922-v7"></script>
+<script>
+    if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => { navigator.serviceWorker.register('./sw.js').catch(err => console.log('SW Gagal: ', err)); });
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        // Logika Tombol Mode Gelap/Terang
+        const btnDarkMode = document.getElementById('btn-login-dark-mode');
+        const iconDarkMode = btnDarkMode?.querySelector('i');
+        
+        // Sesuaikan ikon jika halaman sudah dalam mode gelap saat dimuat
+        if (document.body.classList.contains('dark-mode') && iconDarkMode) {
+            iconDarkMode.classList.replace('fa-moon', 'fa-sun');
+        }
+
+        // Jalankan fungsi saat tombol diklik
+        btnDarkMode?.addEventListener('click', () => {
+            document.body.classList.toggle('dark-mode');
+            const isDark = document.body.classList.contains('dark-mode');
+            
+            // Simpan preferensi ke LocalStorage
+            localStorage.setItem('theme', isDark ? 'dark' : 'light');
+            
+            // Ganti ikon bulan/matahari
+            if (isDark) { 
+                iconDarkMode?.classList.replace('fa-moon', 'fa-sun'); 
+            } else { 
+                iconDarkMode?.classList.replace('fa-sun', 'fa-moon'); 
+            }
+        });
+    });
+</script>
+</body>
+</html>

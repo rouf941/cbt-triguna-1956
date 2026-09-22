@@ -1,0 +1,24 @@
+{
+  "name": "CBT TRIGUNA 1956",
+  "short_name": "CBT TRIGUNA",
+  "description": "Portal Ujian Berbasis Komputer TRIGUNA 1956 VOCATIONAL SCHOOL",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#ffffff",
+  "theme_color": "#0b78c9",
+  "icons": [
+    {
+      "src": "logo-triguna-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "logo-triguna-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

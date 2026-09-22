@@ -1,0 +1,24 @@
+{
+  "firestore": {
+    "rules": "firestore.rules"
+  },
+  "storage": {
+    "rules": "storage.rules"
+  },
+  "hosting": {
+    "public": ".",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**",
+      "README.md",
+      "FIREBASE_SETUP.md",
+      "FIRESTORE_SETUP.md",
+      "firebase-config.example.js",
+      "firestore.rules",
+      "storage.rules"
+    ],
+    "cleanUrls": true,
+    "trailingSlash": false
+  }
+}
