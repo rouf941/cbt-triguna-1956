@@ -1302,24 +1302,46 @@ function renderAuthProblem(title, message, showRetry) {
 // ==========================================
 onAuthStateChanged(auth, async (user) => {
     if (!user) { window.location.replace("index.html"); return; }
+
+    // Profil dideklarasikan di scope callback agar bisa dipakai setelah blok try/catch.
+    // Bug versi sebelumnya membuat `profile` hanya hidup di dalam try sehingga baris greeting
+    // memicu `ReferenceError: profile is not defined` dan bootstrap dashboard tidak pernah berjalan.
+    let profile = {
+        nama: user.displayName || user.email || "Pengguna",
+        role: [],
+        mapel: [],
+        kelas: []
+    };
+
+    const parseStorageArray = (key) => {
+        try {
+            const raw = JSON.parse(localStorage.getItem(key) || "[]");
+            if (Array.isArray(raw)) return raw;
+            return raw == null || raw === "" ? [] : [raw];
+        } catch (_) {
+            const raw = localStorage.getItem(key);
+            return raw == null || raw === "" ? [] : [raw];
+        }
+    };
+
     try {
         const userSnap = await getDoc(doc(db, "users", user.uid));
         if (!userSnap.exists()) {
             console.error("Profil pengguna tidak ditemukan:", user.uid);
-            const rolesFromCache = JSON.parse(localStorage.getItem("userRole") || "[]");
-            const cachedIsAdmin = Array.isArray(rolesFromCache) && rolesFromCache.includes("admin");
-            const cachedIsGuru = Array.isArray(rolesFromCache) && rolesFromCache.includes("guru");
+            profile.role = parseStorageArray("userRole");
+            profile.mapel = parseStorageArray("userMapel");
+            profile.kelas = parseStorageArray("userKelas");
+
+            const rolesFromCache = profile.role.map(v => String(v ?? '').trim().toLowerCase()).filter(Boolean);
+            const cachedIsAdmin = rolesFromCache.includes("admin");
+            const cachedIsGuru = rolesFromCache.includes("guru");
             if (!cachedIsAdmin && !cachedIsGuru) {
                 renderAuthProblem("Profil akun belum ditemukan", `Akun berhasil login tetapi dokumen users/${user.uid} belum ada di Firestore. Tambahkan profil dengan Document ID yang sama persis dengan UID Authentication.`, true);
                 return;
             }
+        } else {
+            profile = userSnap.data() || {};
         }
-        const profile = userSnap.exists() ? userSnap.data() : {
-            nama: user.displayName || user.email || "Pengguna",
-            role: JSON.parse(localStorage.getItem("userRole") || "[]"),
-            mapel: JSON.parse(localStorage.getItem("userMapel") || "[]"),
-            kelas: JSON.parse(localStorage.getItem("userKelas") || "[]")
-        };
         // Normalisasi data lama: role boleh "Admin"/"ADMIN" dan mapel/kelas boleh string atau array.
         const roles = (Array.isArray(profile.role) ? profile.role : [profile.role])
             .map(v => String(v ?? '').trim().toLowerCase())
