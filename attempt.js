@@ -472,11 +472,20 @@ function tampilkanSoal(idx) {
         htmlContent += `</div>`;
     }
     else if (tipeSoal === 'MENJODOHKAN') {
-        const pasangan = Array.isArray(soal.pasangan) ? soal.pasangan.filter(p => p && p.kiri != null && p.kanan != null) : [];
-        const jwbSiswaObj = (examState.jawabanSiswa[soal.id] && typeof examState.jawabanSiswa[soal.id] === 'object')
-            ? examState.jawabanSiswa[soal.id] : {};
+        /*
+         * Matching/menjodohkan V6
+         * - Nilai yang disimpan menggunakan KODE pilihan (1, 2, 3, ...), bukan teks.
+         * - Tetap kompatibel dengan data lama yang menyimpan teks jawaban.
+         * - UI kanan menampilkan nomor + teks secara rapi dan tidak menghasilkan "2. 2".
+         */
+        const pasangan = Array.isArray(soal.pasangan)
+            ? soal.pasangan.filter(p => p && p.kiri != null && p.kanan != null)
+            : [];
+        const storedAnswer = examState.jawabanSiswa[soal.id];
+        const rawJwb = (storedAnswer && typeof storedAnswer === 'object' && !Array.isArray(storedAnswer))
+            ? storedAnswer : {};
 
-        // Ambil label A=Teknis; B=Ekonomi; ... dari teks soal jika sisi kiri hanya berisi huruf A/B/C/D.
+        // Ambil label A=...; B=... dari batang soal untuk data Excel/template.
         const labelMap = {};
         const stem = String(teksSoal || '');
         const labelRegex = /([A-E])\s*=\s*([^;,.]+?)(?=\s*(?:;|,|\.|$))/gi;
@@ -484,6 +493,13 @@ function tampilkanSoal(idx) {
         while ((labelMatch = labelRegex.exec(stem)) !== null) {
             labelMap[labelMatch[1].toUpperCase()] = labelMatch[2].trim();
         }
+
+        const escapeHtml = (value) => String(value ?? '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
 
         const resolveLeftLabel = (key, idx) => {
             const raw = String(key ?? '').trim();
@@ -493,9 +509,33 @@ function tampilkanSoal(idx) {
             return raw || `Pernyataan ${idx + 1}`;
         };
 
-        // Simpan urutan pilihan sekali per soal agar tidak berubah setiap kali siswa berpindah soal.
+        // Bentuk bank pilihan kanan yang stabil berdasarkan nomor_kanan.
+        const rightBankMap = new Map();
+        pasangan.forEach((p, idx) => {
+            const fallbackCode = String(idx + 1);
+            const code = String(p.nomor_kanan ?? '').trim() || fallbackCode;
+            const text = String(p.kanan ?? '').trim();
+            if (!rightBankMap.has(code)) rightBankMap.set(code, { code, text });
+        });
+
+        // Kompatibilitas dengan data lama: jika jawaban tersimpan berupa teks, ubah ke kode.
+        const normalizedAnswers = {};
+        Object.entries(rawJwb).forEach(([left, answerValue]) => {
+            if (answerValue == null || answerValue === '') return;
+            const rawValue = String(answerValue).trim();
+            if (rightBankMap.has(rawValue)) {
+                normalizedAnswers[left] = rawValue;
+                return;
+            }
+            const found = [...rightBankMap.values()].find(item => item.text === rawValue);
+            if (found) normalizedAnswers[left] = found.code;
+        });
+        examState.jawabanSiswa[soal.id] = normalizedAnswers;
+        const jwbSiswaObj = normalizedAnswers;
+
+        // Urutan pilihan diacak sekali per soal, tetapi nomor/kode tetap stabil.
         if (!Array.isArray(examState.matchingOptions[soal.id])) {
-            const options = pasangan.map(p => String(p.kanan).trim()).filter(Boolean);
+            const options = [...rightBankMap.values()];
             for (let i = options.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
                 [options[i], options[j]] = [options[j], options[i]];
@@ -503,60 +543,74 @@ function tampilkanSoal(idx) {
             examState.matchingOptions[soal.id] = options;
         }
         const semuaKanan = examState.matchingOptions[soal.id];
+        const totalPairs = pasangan.length;
+        const answeredPairs = pasangan.reduce((n, p) => {
+            const key = String(p.kiri).trim();
+            return n + (jwbSiswaObj[key] ? 1 : 0);
+        }, 0);
+
+        const formatRightLabel = (item) => {
+            const code = String(item.code || '').trim();
+            const text = String(item.text || '').trim();
+            // Jika file lama menyimpan teks kanan hanya berupa "1", jangan tampilkan "1. 1".
+            if (/^\d+$/.test(text) && text === code) return `Pilihan ${code}`;
+            if (!text) return `Pilihan ${code}`;
+            return `${code}. ${text}`;
+        };
 
         htmlContent += `
-            <div style="font-size:0.92rem; color:var(--warning); font-weight:700; margin:0 0 16px; display:flex; align-items:center; gap:8px;">
-                <i class="fas fa-hand-pointer"></i> Cocokkan setiap pernyataan di sebelah kiri dengan satu pasangan jawaban di sebelah kanan.
+            <div style="font-size:.92rem; color:#b7791f; font-weight:800; margin:0 0 14px; display:flex; align-items:center; gap:8px;">
+                <i class="fas fa-hand-pointer"></i>
+                <span>Cocokkan setiap pernyataan di sebelah kiri dengan satu pilihan di sebelah kanan.</span>
             </div>
-            <div style="display:grid; grid-template-columns:minmax(0, 1fr) 110px minmax(0, 1.25fr); gap:0; border:1px solid #cbd5e1; border-radius:14px; overflow:hidden; background:#fff; box-shadow:0 2px 8px rgba(15,23,42,0.05);">
-                <div style="padding:12px 16px; background:#eff6ff; border-bottom:1px solid #dbeafe; font-weight:800; color:#1e3a8a;">Pernyataan</div>
-                <div style="padding:12px 8px; background:#f8fafc; border-bottom:1px solid #dbeafe; text-align:center; font-weight:800; color:#64748b;">&nbsp;</div>
-                <div style="padding:12px 16px; background:#eff6ff; border-bottom:1px solid #dbeafe; font-weight:800; color:#1e3a8a;">Pilih Pasangan</div>`;
+            <div style="display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:10px; margin:0 0 14px; padding:10px 14px; border:1px solid #dbeafe; background:#f8fbff; border-radius:10px;">
+                <span style="font-weight:800; color:#1e3a8a;"><i class="fas fa-link"></i> Menjodohkan</span>
+                <span id="matching-progress" style="font-weight:800; color:#475569;">${answeredPairs}/${totalPairs} pasangan terisi</span>
+            </div>
+            <div style="display:grid; grid-template-columns:minmax(0,1fr) 56px minmax(0,1.15fr); border:1px solid #cbd5e1; border-radius:14px; overflow:hidden; background:#fff; box-shadow:0 3px 10px rgba(15,23,42,.05);">
+                <div style="padding:13px 16px; background:#eff6ff; border-bottom:1px solid #dbeafe; font-weight:800; color:#1e3a8a;">Pernyataan</div>
+                <div style="padding:13px 8px; background:#f8fafc; border-bottom:1px solid #dbeafe; text-align:center; font-weight:800; color:#64748b;">&nbsp;</div>
+                <div style="padding:13px 16px; background:#eff6ff; border-bottom:1px solid #dbeafe; font-weight:800; color:#1e3a8a;">Pilihan Jawaban</div>`;
 
         pasangan.forEach((p, idx) => {
             const kiri = String(p.kiri).trim();
-            const selectedKanan = jwbSiswaObj[kiri] || '';
-            const alreadyUsedElsewhere = new Set(Object.entries(jwbSiswaObj)
+            const selectedCode = jwbSiswaObj[kiri] || '';
+            const usedElsewhere = new Set(Object.entries(jwbSiswaObj)
                 .filter(([k, v]) => k !== kiri && v)
                 .map(([, v]) => String(v)));
 
-            let optionsHtml = `<option value="">-- Pilih Pasangan --</option>`;
-            const optionNumberMap = new Map();
-            pasangan.forEach(p => {
-                const val = String(p.kanan).trim();
-                if (!optionNumberMap.has(val)) {
-                    const n = String(p.nomor_kanan || optionNumberMap.size + 1);
-                    optionNumberMap.set(val, n);
-                }
-            });
-            semuaKanan.forEach((k, choiceIdx) => {
-                const safeK = String(k);
-                const disabled = alreadyUsedElsewhere.has(safeK) && safeK !== selectedKanan ? 'disabled' : '';
-                const displayNo = optionNumberMap.get(safeK) || String(choiceIdx + 1);
-                optionsHtml += `<option value="${safeK.replace(/\"/g, '&quot;')}" ${selectedKanan === safeK ? 'selected' : ''} ${disabled}>${displayNo}. ${safeK}</option>`;
+            let optionsHtml = `<option value="">-- Pilih pasangan --</option>`;
+            semuaKanan.forEach(item => {
+                const code = String(item.code);
+                const disabled = usedElsewhere.has(code) && code !== selectedCode ? 'disabled' : '';
+                const selected = selectedCode === code ? 'selected' : '';
+                optionsHtml += `<option value="${escapeHtml(code)}" ${selected} ${disabled}>${escapeHtml(formatRightLabel(item))}</option>`;
             });
 
             htmlContent += `
-                <div style="padding:14px 16px; border-top:1px solid #e2e8f0; display:flex; align-items:center; gap:10px; background:#ffffff;">
-                    <span style="display:inline-flex; align-items:center; justify-content:center; min-width:32px; height:32px; padding:0 8px; border-radius:8px; background:#0ea5e9; color:white; font-weight:800; flex:none;">${/^[A-E]$/.test(kiri.toUpperCase()) ? kiri.toUpperCase() : idx + 1}</span>
-                    <span style="font-weight:650; color:var(--secondary); line-height:1.5;">${resolveLeftLabel(kiri, idx)}</span>
+                <div style="padding:15px 16px; border-top:1px solid #e2e8f0; display:flex; align-items:center; gap:11px; background:#fff; min-height:74px;">
+                    <span style="display:inline-flex; align-items:center; justify-content:center; width:36px; height:36px; border-radius:10px; background:#3b82f6; color:#fff; font-weight:800; flex:none;">${/^[A-E]$/.test(kiri.toUpperCase()) ? escapeHtml(kiri.toUpperCase()) : idx + 1}</span>
+                    <span style="font-weight:700; color:#0f172a; line-height:1.5;">${escapeHtml(resolveLeftLabel(kiri, idx))}</span>
                 </div>
-                <div style="border-top:1px solid #e2e8f0; display:flex; align-items:center; justify-content:center; color:#94a3b8; background:#f8fafc;"><i class="fas fa-arrow-right"></i></div>
-                <div style="padding:10px 14px; border-top:1px solid #e2e8f0; background:#ffffff;">
-                    <select class="input-text select-jodoh" data-kiri="${kiri.replace(/\"/g, '&quot;')}" style="width:100%; min-height:48px; border:2px solid #22c55e; border-radius:10px; background:#fff; padding:10px 12px; font-weight:600; color:#0f172a;">
+                <div style="border-top:1px solid #e2e8f0; display:flex; align-items:center; justify-content:center; color:#94a3b8; background:#f8fafc; font-size:1.05rem;"><i class="fas fa-arrow-right"></i></div>
+                <div style="padding:11px 14px; border-top:1px solid #e2e8f0; background:#fff; display:flex; align-items:center;">
+                    <select class="input-text select-jodoh" data-kiri="${escapeHtml(kiri)}" style="width:100%; min-height:50px; border:2px solid #94a3b8; border-radius:11px; background:#fff; padding:10px 12px; font-weight:700; color:#0f172a; outline:none;">
                         ${optionsHtml}
                     </select>
                 </div>`;
         });
-
         htmlContent += `</div>`;
+
         if (semuaKanan.length) {
-            const summaryMap = new Map();
-            pasangan.forEach((p, i) => {
-                const val = String(p.kanan).trim();
-                if (!summaryMap.has(val)) summaryMap.set(val, String(p.nomor_kanan || summaryMap.size + 1));
-            });
-            htmlContent += `<div style="margin-top:14px; padding:12px 14px; border:1px dashed #94a3b8; border-radius:10px; background:#f8fafc; font-size:0.86rem; color:#475569;"><b>Daftar pilihan:</b> ${semuaKanan.map(k => `<span style="display:inline-block; margin:4px 4px 0 0; padding:5px 9px; border-radius:999px; background:#e2e8f0;">${summaryMap.get(String(k).trim()) || ''}. ${k}</span>`).join('')}</div>`;
+            htmlContent += `
+                <div style="margin-top:14px; padding:13px 14px; border:1px solid #e2e8f0; border-radius:11px; background:#f8fafc;">
+                    <div style="font-weight:800; color:#334155; margin-bottom:8px;"><i class="fas fa-list-ol"></i> Bank pilihan</div>
+                    <div style="display:flex; flex-wrap:wrap; gap:7px 8px;">${semuaKanan.map(item => `
+                        <span style="display:inline-flex; align-items:center; gap:7px; margin:0; padding:7px 10px; border-radius:9px; background:#fff; border:1px solid #dbe3ee; color:#334155; font-size:.86rem;">
+                            <b style="display:inline-flex; align-items:center; justify-content:center; min-width:24px; height:24px; border-radius:7px; background:#dbeafe; color:#1d4ed8;">${escapeHtml(item.code)}</b>
+                            <span>${escapeHtml((/^\d+$/.test(item.text) && item.text === item.code) ? 'Pilihan ' + item.code : item.text || 'Pilihan ' + item.code)}</span>
+                        </span>`).join('')}</div>
+                </div>`;
         }
     }
     else {
@@ -597,11 +651,16 @@ function tampilkanSoal(idx) {
     else if (tipeSoal === 'MENJODOHKAN') {
         container.querySelectorAll('.select-jodoh').forEach(sel => {
             sel.onchange = (e) => {
-                let jwbSiswaObj = examState.jawabanSiswa[soal.id] || {};
-                jwbSiswaObj[e.target.getAttribute('data-kiri')] = e.target.value;
-                examState.jawabanSiswa[soal.id] = jwbSiswaObj;
+                const key = e.target.getAttribute('data-kiri');
+                const current = (examState.jawabanSiswa[soal.id] && typeof examState.jawabanSiswa[soal.id] === 'object')
+                    ? examState.jawabanSiswa[soal.id] : {};
+                if (e.target.value) current[key] = String(e.target.value);
+                else delete current[key];
+                examState.jawabanSiswa[soal.id] = current;
                 simpanJawabanLokal();
                 renderNavigasi();
+                // Render ulang agar pilihan yang sudah dipakai otomatis dinonaktifkan.
+                tampilkanSoal(examState.currentIndex);
             };
         });
     }
@@ -721,8 +780,12 @@ async function selesaiUjian(statusAkhir = "NORMAL") {
                 let totalPairs = s.pasangan.length;
                 let correctPairs = 0;
                 let jwbObj = typeof jwb === 'object' ? jwb : {};
-                s.pasangan.forEach(p => {
-                    if (jwbObj[p.kiri] === p.kanan) correctPairs++;
+                s.pasangan.forEach((p, i) => {
+                    const expected = String(p?.nomor_kanan ?? (i + 1)).trim();
+                    const actualRaw = jwbObj?.[p.kiri];
+                    const actual = String(actualRaw ?? '').trim();
+                    const rightText = String(p?.kanan ?? '').trim();
+                    if (actual === expected || (actual === rightText && rightText === expected)) correctPairs++;
                 });
                 if (totalPairs > 0) {
                     skorDiperolehPG += (correctPairs / totalPairs) * bobot;

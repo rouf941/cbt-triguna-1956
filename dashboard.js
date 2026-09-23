@@ -137,14 +137,22 @@ const SoalManager = {
             const statSoalEl = document.getElementById('stat-soal'); 
             if (statSoalEl) statSoalEl.innerText = Object.keys(this.allSummary).length;
             
-            const waktuSnap = await getDoc(doc(db, "pengaturan", "waktu_ujian")); 
-            const waktuData = waktuSnap.exists() ? waktuSnap.data() : {};
-            const jadwalSnap = await getDoc(doc(db, "pengaturan", "jadwal_ujian")); 
-            const jadwalData = jadwalSnap.exists() ? jadwalSnap.data() : {};
-            const tokenSnap = await getDoc(doc(db, "pengaturan", "token_ujian")); 
-            const tokenData = tokenSnap.exists() ? tokenSnap.data() : {};
-            const acakSnap = await getDoc(doc(db, "pengaturan", "acak_soal"));
-            const acakData = acakSnap.exists() ? acakSnap.data() : {};
+            // Pengaturan ujian bersifat opsional untuk ringkasan. Jangan biarkan satu
+            // dokumen yang tidak terbaca membuat seluruh Bank Soal gagal tampil.
+            let waktuData = {}, jadwalData = {}, tokenData = {}, acakData = {};
+            if (isAdmin || isGuru) {
+                const settings = await Promise.allSettled([
+                    getDoc(doc(db, "pengaturan", "waktu_ujian")),
+                    getDoc(doc(db, "pengaturan", "jadwal_ujian")),
+                    getDoc(doc(db, "pengaturan", "token_ujian")),
+                    getDoc(doc(db, "pengaturan", "acak_soal"))
+                ]);
+                [waktuData, jadwalData, tokenData, acakData] = settings.map(result => {
+                    if (result.status === 'fulfilled' && result.value?.exists()) return result.value.data() || {};
+                    if (result.status === 'rejected') console.warn('Pengaturan ujian tidak tersedia:', result.reason?.code || result.reason);
+                    return {};
+                });
+            }
             
             let html = ''; 
             let rowIdx = 0;
@@ -1885,9 +1893,9 @@ document.getElementById('form-tambah-soal')?.addEventListener('submit', async (e
             }
         } else if (tipe === 'Menjodohkan') {
             let pasangan = [];
-            document.querySelectorAll('.pasangan-item').forEach(item => {
+            document.querySelectorAll('.pasangan-item').forEach((item, pairIndex) => {
                 let kiri = item.querySelector('.m-kiri').value.trim(); let kanan = item.querySelector('.m-kanan').value.trim();
-                if (kiri && kanan) pasangan.push({ kiri, kanan });
+                if (kiri && kanan) pasangan.push({ kiri, kanan, nomor_kanan: String(pairIndex + 1) });
             });
             if (pasangan.length === 0) throw new Error("Masukkan minimal satu pasangan untuk soal tipe Menjodohkan!");
             payload.pasangan = pasangan;

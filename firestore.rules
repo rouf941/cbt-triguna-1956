@@ -36,13 +36,17 @@ service cloud.firestore {
     }
 
     function isAdmin() { return hasRole('admin'); }
-    function isStaff() { return isAdmin() || hasRole('guru'); }
+    function isGuru() { return hasRole('guru'); }
+    function isStaff() { return isAdmin() || isGuru(); }
     function isStudent() { return hasRole('siswa'); }
 
-    // Konfigurasi yang dibaca sebelum login. Hanya dokumen non-rahasia yang boleh dibaca publik.
+    // Konfigurasi akademik/status dapat dibaca publik. Pengaturan ujian hanya dapat
+    // diakses oleh staf (admin/guru) karena berisi jadwal, durasi, token, dan pengacakan.
     match /pengaturan/{docId} {
-      allow read: if docId in ['status_registrasi', 'data_akademik'];
-      allow write: if isAdmin();
+      allow read: if docId in ['status_registrasi', 'data_akademik'] ||
+                  (docId in ['waktu_ujian', 'jadwal_ujian', 'token_ujian', 'acak_soal'] && isStaff());
+      allow write: if isAdmin() ||
+                   (isGuru() && docId in ['waktu_ujian', 'jadwal_ujian', 'token_ujian', 'acak_soal']);
     }
 
     // Profil pengguna. Akun siswa/guru dapat membuat profil sendiri; admin dapat membuat
